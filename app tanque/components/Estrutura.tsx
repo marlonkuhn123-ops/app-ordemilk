@@ -1,9 +1,26 @@
-
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { ViewState } from '../types';
 
 // --- CABEÇALHO (TOPO) ---
 export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
+    const [hasCustomKey, setHasCustomKey] = useState(false);
+
+    useEffect(() => {
+        const key = localStorage.getItem('om_key_v41_force');
+        setHasCustomKey(!!key);
+    }, []);
+
+    // Função oculta para atualizar chave clicando no ícone de chave
+    const updateKey = () => {
+        const current = localStorage.getItem('om_key_v41_force') || '';
+        const newKey = window.prompt("CONFIGURAÇÃO TÉCNICA (API KEY):\n\nInsira sua chave aqui se a conexão falhar:", current);
+        if (newKey !== null && newKey.trim().length > 20 && newKey.startsWith("AIza")) {
+            localStorage.setItem('om_key_v41_force', newKey.trim());
+            alert("Chave salva.");
+            window.location.reload(); 
+        }
+    };
+
     return (
         <div className="pt-safe pb-3 px-6 sticky top-0 z-30 transition-colors duration-500 backdrop-blur-md border-b bg-[#121212]/90 border-[#333]">
             <div className="flex justify-between items-end max-w-2xl mx-auto pt-2">
@@ -30,13 +47,25 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                 </div>
                 
                 <div className="flex items-center gap-3 mb-1">
+                    {/* Botão de Chave - Discreto */}
+                    <button 
+                        onClick={updateKey}
+                        className={`w-7 h-7 flex items-center justify-center rounded-md border text-xs shadow-md transition-all ${
+                            hasCustomKey 
+                            ? 'border-emerald-800 bg-emerald-900/20 text-emerald-500' 
+                            : 'border-[#333] bg-[#1e1e1e] text-gray-600 hover:text-white'
+                        }`}
+                    >
+                        <i className="fa-solid fa-key"></i>
+                    </button>
+
                     <div className={`px-2 py-1 rounded-md flex items-center gap-1.5 border ${
                         isOnline 
                             ? 'border-emerald-900/50 bg-emerald-900/10 text-emerald-400' 
                             : 'border-red-900/50 bg-red-900/10 text-red-400'
                     }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V44</span>
                     </div>
                 </div>
             </div>
@@ -77,7 +106,6 @@ const NavItem: React.FC<NavItemProps> = memo(({ id, icon, label, isActive, onCli
     );
 });
 
-// Dados estáticos fora do componente para evitar recriação
 const NAV_ITEMS = [
     { id: ViewState.DIAGNOSTIC, icon: 'fa-solid fa-robot', label: '1.SUPORTE' },
     { id: ViewState.ERRORS, icon: 'fa-solid fa-triangle-exclamation', label: '2.Erros' },
@@ -87,10 +115,8 @@ const NAV_ITEMS = [
     { id: ViewState.TECH_DATA, icon: 'fa-solid fa-boxes-stacked', label: '6.Dados' },
 ];
 
-// --- MENU RODAPÉ (NAVEGAÇÃO) ---
 export const BottomNav: React.FC<{ activeView: ViewState; setView: (v: ViewState) => void }> = memo(({ activeView, setView }) => {
     return (
-        // Uso de pb-safe e bottom-safe para iPhone
         <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[96%] max-w-[480px] z-50">
             <div className="rounded-xl py-2 px-1 shadow-2xl backdrop-blur-xl border flex overflow-x-auto no-scrollbar justify-between items-center bg-[#1e1e1e]/95 border-[#333] shadow-black/80">
                 {NAV_ITEMS.map(item => (

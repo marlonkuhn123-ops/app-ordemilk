@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, SectionTitle, Button, Select, AIOutputBox } from './ComponentesUI';
 import { generateTechResponse } from '../services/geminiService';
@@ -10,6 +9,7 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
 
     const fetchData = async () => {
         setLoading(true);
+        setResult(""); // Limpa resultado anterior
         try {
             // Prompt Blindado
             const prompt = `
@@ -29,8 +29,9 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
             
             const text = await generateTechResponse(prompt, "TECH_DATA");
             setResult(text);
-        } catch (e) {
-            setResult("Erro ao buscar dados técnicos.");
+        } catch (e: any) {
+            // MOSTRAR O ERRO REAL PARA O USUÁRIO SABER O QUE FAZER
+            setResult(`ERRO: ${e.message || "Falha na conexão com a IA."}`);
         } finally {
             setLoading(false);
         }

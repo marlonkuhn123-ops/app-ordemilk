@@ -1,20 +1,48 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants";
 
-const getApiKey = () => {
-    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
-        return (window as any).process.env.API_KEY;
+// --- CONFIGURAÇÃO DE SEGURANÇA E CONEXÃO ---
+
+// CHAVE DE STORAGE (NAVEGADOR)
+const STORAGE_KEY = 'om_key_v41_force';
+
+const getAI = () => {
+    // 1. Tenta pegar do LocalStorage (Inserida manualmente)
+    const localKey = localStorage.getItem(STORAGE_KEY);
+    if (localKey && localKey.length > 20 && localKey.startsWith('AIza')) {
+        return new GoogleGenAI({ apiKey: localKey });
     }
-    return "";
+
+    // 2. Tenta pegar do Ambiente (Vercel / .env)
+    if (typeof process !== 'undefined' && process.env) {
+        if (process.env.GEMINI_API_KEY) return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        if (process.env.REACT_APP_GEMINI_API_KEY) return new GoogleGenAI({ apiKey: process.env.REACT_APP_GEMINI_API_KEY });
+    }
+
+    // 3. Tenta pegar do Ambiente VITE
+    try {
+        // @ts-ignore
+        if (import.meta && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+            // @ts-ignore
+            return new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+        }
+    } catch (e) {
+        // Ignora
+    }
+    
+    // Se não achar chave, retorna null. O tratamento de erro será na chamada.
+    return null;
 };
 
-const API_KEY = getApiKey();
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-const MODEL_NAME = 'gemini-3-flash-preview';
+// MODELO ESTÁVEL
+const MODEL_NAME = 'gemini-2.0-flash';
 
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
-    if (!API_KEY) return "ERRO: Chave API não configurada.";
+    const ai = getAI();
+    
+    if (!ai) {
+        return "⚠️ MODO OFFLINE (SEM CHAVE API)\n\nO aplicativo está sem uma chave de IA configurada. \n\nPara corrigir:\n1. Adicione a variável GEMINI_API_KEY no seu provedor (Vercel).\n2. Ou clique no ícone de chave no topo e cole uma API Key manualmente.";
+    }
 
     const toolInstruction = (TOOL_PROMPTS as any)[toolType] || "";
     const fullSystemInstruction = `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${toolInstruction}`;
@@ -25,15 +53,25 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
             contents: { role: "user", parts: [{ text: userPrompt }] },
             config: {
                 systemInstruction: fullSystemInstruction,
-                temperature: 0.0, // TEMPERATURA ZERO: Impede improvisação. A IA torna-se determinística.
+                temperature: 0.1,
                 maxOutputTokens: 2000,
             }
         });
 
         return response.text || "Sem resposta da IA.";
     } catch (error: any) {
-        console.error("Gemini API Error:", error);
-        return "Serviço indisponível no momento. Verifique sua conexão.";
+        console.error("Gemini API Error V44:", error);
+        
+        if (error.message) {
+            if (error.message.includes("403") || error.message.includes("key")) {
+                return `⛔ ERRO DE CHAVE (403)\n\nA chave API configurada no servidor ou dispositivo é inválida.`;
+            }
+            if (error.message.includes("429")) {
+                return `⏳ COTA EXCEDIDA (429)\n\nAguarde alguns instantes e tente novamente.`;
+            }
+        }
+
+        return `⚠️ ERRO TÉCNICO:\n${error.message || "Falha desconhecida."}`;
     }
 };
 
@@ -42,7 +80,8 @@ export const generateChatResponse = async (
     newMessage: string, 
     imageBase64?: string
 ) => {
-    if (!API_KEY) return "ERRO: Chave API não configurada.";
+    const ai = getAI();
+    if (!ai) return "⚠️ ERRO: Sistema sem chave de API configurada. Verifique as configurações.";
 
     const contents = history.map(h => ({ role: h.role, parts: h.parts }));
     
@@ -58,19 +97,23 @@ export const generateChatResponse = async (
             contents: contents,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.DIAGNOSTIC}`,
-                temperature: 0.0 // TEMPERATURA ZERO: Impede improvisação no chat.
+                temperature: 0.1
             }
         });
         
         return response.text || "Sem resposta.";
     } catch (error: any) {
-        console.error("Chat Error:", error);
-        return "Erro de comunicação com a IA.";
+        console.error("Chat Error V44:", error);
+        if (error.message && error.message.includes("key")) {
+             return "⛔ ERRO: Chave de API inválida ou expirada.";
+        }
+        return `Erro: ${error.message}`;
     }
 };
 
 export const analyzePlateImage = async (imageBase64: string) => {
-    if (!API_KEY) return "{}";
+    const ai = getAI();
+    if (!ai) return "{}";
 
     const prompt = "Leia a placa do motor. Retorne APENAS JSON: {volts: numero, amps: numero, phase: 'tri'|'bi'|'mono'}. Se não conseguir ler com certeza absoluta, retorne {}.";
     
@@ -85,13 +128,12 @@ export const analyzePlateImage = async (imageBase64: string) => {
             },
             config: {
                 responseMimeType: "application/json",
-                temperature: 0.0 // Leitura OCR precisa ser exata.
+                temperature: 0.0
             }
         });
 
         return response.text || "{}";
     } catch (error) {
-        console.error("Image Analysis Error:", error);
         return "{}";
     }
 };
