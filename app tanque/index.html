@@ -23,6 +23,15 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Environment Config -->
+    <script>
+      window.process = {
+        env: {
+          API_KEY: "AIzaSyDqcYW0iwXxWsLMqHxHgMlR48j3ttiBUuQ"
+        }
+      };
+    </script>
+    
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
@@ -48,11 +57,6 @@
         .pt-safe { padding-top: max(20px, env(safe-area-inset-top)); }
         .pb-safe { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
     </style>
-
-    <!-- CRITICAL FIX: Polyfill for process.env in Browser Environment -->
-    <script>
-        window.process = window.process || { env: {} };
-    </script>
 
     <script type="importmap">
 {

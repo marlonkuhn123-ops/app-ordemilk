@@ -1,18 +1,20 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants";
 
-// CONFIGURAÇÃO DA CHAVE DE API
-// Prioridade: 1. Variável de Ambiente (process.env) 2. Chave Fixa (Inserida pelo Usuário)
-const HARDCODED_KEY = "AIzaSyDqcYW0iwXxWsLMqHxHgMlR48j3ttiBUuQ";
-const apiKey = process.env.API_KEY || HARDCODED_KEY || ""; 
+const getApiKey = () => {
+    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
+        return (window as any).process.env.API_KEY;
+    }
+    return "";
+};
 
-const ai = new GoogleGenAI({ apiKey: apiKey });
+const API_KEY = getApiKey();
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 const MODEL_NAME = 'gemini-3-flash-preview';
 
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
-    if (!apiKey) {
-        return "⚠️ ERRO DE SISTEMA: Chave de API não detectada.\n\nAdicione sua chave no código em 'services/geminiService.ts' ou no arquivo .env.";
-    }
+    if (!API_KEY) return "ERRO: Chave API não configurada.";
 
     const toolInstruction = (TOOL_PROMPTS as any)[toolType] || "";
     const fullSystemInstruction = `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${toolInstruction}`;
@@ -23,7 +25,7 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
             contents: { role: "user", parts: [{ text: userPrompt }] },
             config: {
                 systemInstruction: fullSystemInstruction,
-                temperature: 0.0,
+                temperature: 0.0, // TEMPERATURA ZERO: Impede improvisação. A IA torna-se determinística.
                 maxOutputTokens: 2000,
             }
         });
@@ -31,8 +33,7 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
         return response.text || "Sem resposta da IA.";
     } catch (error: any) {
         console.error("Gemini API Error:", error);
-        // Mensagem de erro amigável para o técnico
-        return `⚠️ FALHA DE CONEXÃO:\n${error.message || "Erro desconhecido ao contatar a IA."}\n\nVerifique se a chave de API é válida.`;
+        return "Serviço indisponível no momento. Verifique sua conexão.";
     }
 };
 
@@ -41,7 +42,7 @@ export const generateChatResponse = async (
     newMessage: string, 
     imageBase64?: string
 ) => {
-    if (!apiKey) return "⚠️ ERRO: API_KEY não configurada.";
+    if (!API_KEY) return "ERRO: Chave API não configurada.";
 
     const contents = history.map(h => ({ role: h.role, parts: h.parts }));
     
@@ -57,19 +58,19 @@ export const generateChatResponse = async (
             contents: contents,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.DIAGNOSTIC}`,
-                temperature: 0.0
+                temperature: 0.0 // TEMPERATURA ZERO: Impede improvisação no chat.
             }
         });
         
         return response.text || "Sem resposta.";
     } catch (error: any) {
         console.error("Chat Error:", error);
-        return `⚠️ Erro de Conexão: ${error.message || "Servidor não respondeu."}`;
+        return "Erro de comunicação com a IA.";
     }
 };
 
 export const analyzePlateImage = async (imageBase64: string) => {
-    if (!apiKey) return "{}";
+    if (!API_KEY) return "{}";
 
     const prompt = "Leia a placa do motor. Retorne APENAS JSON: {volts: numero, amps: numero, phase: 'tri'|'bi'|'mono'}. Se não conseguir ler com certeza absoluta, retorne {}.";
     
@@ -84,7 +85,7 @@ export const analyzePlateImage = async (imageBase64: string) => {
             },
             config: {
                 responseMimeType: "application/json",
-                temperature: 0.0
+                temperature: 0.0 // Leitura OCR precisa ser exata.
             }
         });
 

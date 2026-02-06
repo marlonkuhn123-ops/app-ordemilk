@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header, BottomNav } from './components/Estrutura';
 import { TutorialOverlay } from './components/TutorialOverlay';
-import { LoginScreen } from './components/LoginScreen';
 
 // COMPONENTES DE FERRAMENTAS
 import { Ferramenta_1_Assistente } from './components/Ferramenta_1_Assistente';
@@ -11,37 +10,15 @@ import { Ferramenta_3_Calculadora } from './components/Ferramenta_3_Calculadora'
 import { Ferramenta_4_Dimensionamento } from './components/Ferramenta_4_Dimensionamento';
 import { Ferramenta_5_Relatorio } from './components/Ferramenta_5_Relatorio';
 import { Ferramenta_6_Catalogo } from './components/Ferramenta_6_Catalogo';
-import { Ferramenta_7_Instalacao } from './components/Ferramenta_7_Instalacao';
-import { HistoryTool } from './components/HistoryTool'; // Ensure this is imported if used, otherwise remove or create
 
 import { ViewState } from './types';
 import { GlobalProvider } from './contexts/GlobalContext';
 
 const AppContent: React.FC = () => {
-    // --- AUTH STATE ---
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-    // --- APP STATE ---
     const [view, setView] = useState<ViewState>(ViewState.DIAGNOSTIC);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     
-    // --- CHECK LOGIN ON LOAD ---
-    useEffect(() => {
-        const checkAuth = () => {
-            const today = new Date().toDateString(); // Ex: "Mon Oct 02 2025"
-            const savedDate = localStorage.getItem('om_auth_date');
-            
-            if (savedDate === today) {
-                setIsAuthenticated(true);
-            }
-            setIsCheckingAuth(false);
-        };
-        checkAuth();
-    }, []);
-
-    // --- NETWORK STATUS ---
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -53,12 +30,6 @@ const AppContent: React.FC = () => {
         };
     }, []);
 
-    const handleLoginSuccess = () => {
-        const today = new Date().toDateString();
-        localStorage.setItem('om_auth_date', today);
-        setIsAuthenticated(true);
-    };
-
     const renderView = () => {
         switch (view) {
             case ViewState.DIAGNOSTIC: return <Ferramenta_1_Assistente />;
@@ -67,21 +38,10 @@ const AppContent: React.FC = () => {
             case ViewState.SIZING: return <Ferramenta_4_Dimensionamento />;
             case ViewState.REPORT: return <Ferramenta_5_Relatorio />;
             case ViewState.TECH_DATA: return <Ferramenta_6_Catalogo />;
-            // Add case for Installation tool if it exists in ViewState enum, else handled by default or add to ViewState
-            // Assuming Ferramenta_7 is integrated somehow or if ViewState needs update.
-            // For now, mapping standard views.
             default: return <Ferramenta_1_Assistente />;
         }
     };
 
-    // --- RENDER LOADING OR LOGIN ---
-    if (isCheckingAuth) return null; // Or a simple spinner
-
-    if (!isAuthenticated) {
-        return <LoginScreen onLogin={handleLoginSuccess} />;
-    }
-
-    // --- RENDER MAIN APP ---
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-[#0a0a0a] text-white relative">
             
