@@ -1,0 +1,7 @@
+{
+  "name": "Ordemilk Tech Assist",
+  "description": "Assistente técnico especializado para resfriadores de leite Ordemilk, com diagnóstico IA e ferramentas de cálculo.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
