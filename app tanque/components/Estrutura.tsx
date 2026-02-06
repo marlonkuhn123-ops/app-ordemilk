@@ -77,7 +77,7 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                             : 'border-red-900/50 bg-red-900/10 text-red-400'
                     }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V48</span>
+                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V49</span>
                     </div>
                 </div>
             </div>
