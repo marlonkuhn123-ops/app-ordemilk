@@ -13,31 +13,32 @@ const getAI = () => {
     const isEnvBlocked = localStorage.getItem(ENV_BLOCKED_KEY) === 'true';
 
     // 1. Tenta pegar do LocalStorage (Prioridade total - Manual Override)
-    // Se o usuário colocou uma chave manual, ignoramos o bloqueio de ambiente
     const localKey = localStorage.getItem(STORAGE_KEY);
     if (localKey && localKey.length > 20 && localKey.startsWith('AIza')) {
         return new GoogleGenAI({ apiKey: localKey });
     }
 
-    // Se não tem chave manual e a do ambiente está bloqueada, retorna NULL (Modo Offline)
+    // Se a chave de ambiente foi bloqueada anteriormente, não tenta ler do env
     if (isEnvBlocked) {
         return null;
     }
 
-    // 2. Tenta pegar do Ambiente (Apenas se não estiver bloqueada)
+    // 2. TENTATIVA ROBUSTA DE PEGAR DO AMBIENTE (VITE / VERCEL)
+    try {
+        // @ts-ignore
+        if (import.meta.env.VITE_GOOGLE_API_KEY) return new GoogleGenAI({ apiKey: import.meta.env.VITE_GOOGLE_API_KEY });
+        // @ts-ignore
+        if (import.meta.env.VITE_GEMINI_API_KEY) return new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+        // @ts-ignore
+        if (import.meta.env.GOOGLE_API_KEY) return new GoogleGenAI({ apiKey: import.meta.env.GOOGLE_API_KEY });
+    } catch (e) {}
+
+    // 3. Fallback para process.env (React clássico ou Node)
     if (typeof process !== 'undefined' && process.env) {
         if (process.env.GEMINI_API_KEY) return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         if (process.env.REACT_APP_GEMINI_API_KEY) return new GoogleGenAI({ apiKey: process.env.REACT_APP_GEMINI_API_KEY });
+        if (process.env.VITE_GOOGLE_API_KEY) return new GoogleGenAI({ apiKey: process.env.VITE_GOOGLE_API_KEY });
     }
-
-    // 3. Tenta pegar do Vite
-    try {
-        // @ts-ignore
-        if (import.meta && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-            // @ts-ignore
-            return new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-        }
-    } catch (e) {}
     
     return null;
 };
@@ -46,16 +47,13 @@ const MODEL_NAME = 'gemini-2.0-flash';
 
 // --- FUNÇÕES DE FALLBACK (OFFLINE - BASE DE DADOS INTERNA) ---
 
-// 1. Extrair Dados Técnicos do Arquivo constants.ts (Sem IA)
 const getOfflineTechData = (prompt: string): string => {
     try {
-        // Regex robusto para pegar o modelo, ignorando o ponto final se houver
         const match = prompt.match(/MODELO SOLICITADO: (.*?)(?:\.|[\r\n]|$)/);
         if (!match) return "Modelo não identificado no modo offline.";
         
         const modelName = match[1].trim();
         
-        // Busca o bloco no TECHNICAL_CONTEXT
         const lines = TECHNICAL_CONTEXT.split('\n');
         let capturing = false;
         let result = `📋 FICHA TÉCNICA (MODO OFFLINE)\nMODELO: ${modelName}\n\n`;
@@ -84,7 +82,6 @@ const getOfflineTechData = (prompt: string): string => {
     }
 };
 
-// 2. Cálculo Matemático Local (Sem IA)
 const getOfflineCalc = (prompt: string): string => {
     try {
         const fluidoMatch = prompt.match(/Fluido: (R-.*?)\s/);
@@ -94,22 +91,19 @@ const getOfflineCalc = (prompt: string): string => {
         if (!fluidoMatch || !pressMatch) return "Dados insuficientes para cálculo offline.";
 
         const fluido = fluidoMatch[1] as string;
-        const P = parseFloat(pressMatch[1]); // PSI
-        const T_lida = tempMatch ? parseFloat(tempMatch[1]) : 0; // °C
+        const P = parseFloat(pressMatch[1]);
+        const T_lida = tempMatch ? parseFloat(tempMatch[1]) : 0;
         const isSH = prompt.includes("Superaquecimento");
         
-        // Lógica simplificada de Saturação (Aproximação linear segura)
         let T_sat = 0;
         const isR22 = fluido.includes("22");
         
         if (isR22) {
-             // R22 (Aprox Regua Danfoss)
-            if (P < 100) T_sat = (P - 58) * 0.6; // Baixa
-            else T_sat = (P - 200) * 0.2 + 40; // Alta
+            if (P < 100) T_sat = (P - 58) * 0.6; 
+            else T_sat = (P - 200) * 0.2 + 40; 
         } else {
-            // R404A
-            if (P < 80) T_sat = (P - 30) * 0.5 - 20; // Baixa
-            else T_sat = (P - 250) * 0.15 + 40; // Alta
+            if (P < 80) T_sat = (P - 30) * 0.5 - 20; 
+            else T_sat = (P - 250) * 0.15 + 40; 
         }
 
         const delta = Math.abs(T_lida - T_sat);
@@ -124,11 +118,10 @@ const getOfflineCalc = (prompt: string): string => {
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
     const ai = getAI();
     
-    // FALLBACK IMEDIATO SE NÃO TIVER CHAVE (OU SE ESTIVER BLOQUEADA)
     if (!ai) {
         if (toolType === "TECH_DATA") return getOfflineTechData(userPrompt);
         if (toolType === "CALC") return getOfflineCalc(userPrompt);
-        return "⚠️ MODO OFFLINE: Funcionalidade indisponível sem chave de API. Adicione uma chave válida nas configurações.";
+        return "⚠️ MODO OFFLINE: Funcionalidade indisponível sem chave de API.";
     }
 
     const toolInstruction = (TOOL_PROMPTS as any)[toolType] || "";
@@ -147,29 +140,21 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
 
         return response.text || "Sem resposta da IA.";
     } catch (error: any) {
-        console.warn("Gemini API Error (Handled V47):", error.message);
+        console.warn("Gemini API Error (Handled V48):", error.message);
         
-        // --- TRATAMENTO DE CHAVE EXPIRADA/INVÁLIDA ---
-        // Se a API retornar erro de chave, bloqueamos ela para não tentar de novo
         if (error.message && (error.message.includes("key") || error.message.includes("400") || error.message.includes("403"))) {
             const manualKey = localStorage.getItem(STORAGE_KEY);
             if (manualKey) {
-                // Se era uma chave manual, remove ela
                 localStorage.removeItem(STORAGE_KEY);
-                console.log("Chave manual inválida removida.");
             } else {
-                // Se NÃO era manual, era a do ambiente. BLOQUEIA ELA.
                 localStorage.setItem(ENV_BLOCKED_KEY, 'true');
-                console.log("Chave de ambiente inválida bloqueada permanentemente. Recarregue para aplicar o modo offline.");
             }
         }
 
-        // --- FALLBACK PÓS-ERRO ---
-        // Retorna o dado offline imediatamente para não mostrar erro na tela
         if (toolType === "TECH_DATA") return getOfflineTechData(userPrompt);
         if (toolType === "CALC") return getOfflineCalc(userPrompt);
 
-        return `⚠️ ERRO DE CONEXÃO (MODO OFFLINE)\n\nO sistema ativou o modo offline para ferramentas essenciais. Tente usar o Catálogo ou Calculadora.`;
+        return `⚠️ ERRO DE CONEXÃO (MODO OFFLINE ATIVADO).\nTente novamente ou use as ferramentas manuais.`;
     }
 };
 
@@ -179,7 +164,21 @@ export const generateChatResponse = async (
     imageBase64?: string
 ) => {
     const ai = getAI();
-    if (!ai) return "⚠️ CHAT OFFLINE: A chave de API expirou ou não está configurada. O Chat Inteligente requer conexão válida.";
+    
+    // MELHORIA V48: Resposta mais útil quando offline
+    if (!ai) {
+        const msg = newMessage.toLowerCase();
+        if (msg.includes("erro") || msg.includes("código") || msg.includes("alarme")) {
+            return "⚠️ CHAT OFFLINE.\n\nPara consultar códigos de falha sem internet, use a ferramenta '2. ERROS' no menu inferior.";
+        }
+        if (msg.includes("calcul") || msg.includes("pressão") || msg.includes("gás")) {
+            return "⚠️ CHAT OFFLINE.\n\nPara cálculos de refrigeração sem internet, use a ferramenta '3. CALC' no menu inferior.";
+        }
+        if (msg.includes("peça") || msg.includes("ficha") || msg.includes("manual")) {
+            return "⚠️ CHAT OFFLINE.\n\nPara ver listas de peças sem internet, use a ferramenta '6. DADOS' no menu inferior.";
+        }
+        return "⚠️ CHAT INDISPONÍVEL.\n\nNão foi detectada uma Chave de API válida. Verifique sua conexão ou adicione uma chave no ícone de 'Chave' no topo da tela.";
+    }
 
     const contents = history.map(h => ({ role: h.role, parts: h.parts }));
     
@@ -205,9 +204,9 @@ export const generateChatResponse = async (
              if (localStorage.getItem(STORAGE_KEY)) localStorage.removeItem(STORAGE_KEY);
              else localStorage.setItem(ENV_BLOCKED_KEY, 'true');
              
-             return "⛔ CHAVE EXPIRADA: O sistema removeu/bloqueou a chave inválida. O Chat ficará indisponível até que uma nova chave seja inserida manualmente.";
+             return "⛔ CHAVE EXPIRADA/INVÁLIDA.\nO sistema bloqueou a chave atual por segurança. Insira uma nova chave manualmente ou verifique a configuração do Vercel (VITE_GOOGLE_API_KEY).";
         }
-        return `Erro: ${error.message}`;
+        return `Erro de comunicação: ${error.message}`;
     }
 };
 
