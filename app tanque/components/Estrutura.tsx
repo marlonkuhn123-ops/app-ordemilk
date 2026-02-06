@@ -13,9 +13,20 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
     // Função oculta para atualizar chave clicando no ícone de chave
     const updateKey = () => {
         const current = localStorage.getItem('om_key_v41_force') || '';
-        const newKey = window.prompt("CONFIGURAÇÃO TÉCNICA (API KEY):\n\nInsira sua chave aqui se a conexão falhar:", current);
+        const newKey = window.prompt("CONFIGURAÇÃO TÉCNICA (API KEY):\n\nInsira sua chave aqui se a conexão falhar.\n\n(Deixe em branco para limpar a chave e resetar bloqueios)", current);
+        
+        if (newKey === "") {
+            localStorage.removeItem('om_key_v41_force');
+            // IMPORTANTE: Reseta o bloqueio de ambiente para permitir nova tentativa se o dev corrigiu o .env
+            localStorage.removeItem('om_env_blocked');
+            alert("Chave removida. Bloqueios resetados.");
+            window.location.reload();
+            return;
+        }
+
         if (newKey !== null && newKey.trim().length > 20 && newKey.startsWith("AIza")) {
             localStorage.setItem('om_key_v41_force', newKey.trim());
+            localStorage.removeItem('om_env_blocked'); // Desbloqueia se o user inseriu uma nova
             alert("Chave salva.");
             window.location.reload(); 
         }
@@ -55,6 +66,7 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                             ? 'border-emerald-800 bg-emerald-900/20 text-emerald-500' 
                             : 'border-[#333] bg-[#1e1e1e] text-gray-600 hover:text-white'
                         }`}
+                        title="Configurar Chave de API"
                     >
                         <i className="fa-solid fa-key"></i>
                     </button>
@@ -65,7 +77,7 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                             : 'border-red-900/50 bg-red-900/10 text-red-400'
                     }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V44</span>
+                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V47</span>
                     </div>
                 </div>
             </div>

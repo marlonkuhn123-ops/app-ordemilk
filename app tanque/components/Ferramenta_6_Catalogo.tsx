@@ -9,9 +9,10 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
 
     const fetchData = async () => {
         setLoading(true);
-        setResult(""); // Limpa resultado anterior
+        setResult(""); 
         try {
-            // Prompt Blindado
+            // Prompt Otimizado para Fallback Offline
+            // O ponto final após ${volume} é CRÍTICO para o Regex do modo offline funcionar.
             const prompt = `
             TAREFA: CONSULTA ESTRITA NA BASE DE DADOS V35.
             MODELO SOLICITADO: ${volume}.
@@ -23,15 +24,13 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
             
             REGRA CRÍTICA DE SAÍDA:
             - NÃO FALE NADA.
-            - NÃO DIGA "AQUI ESTÁ".
             - APENAS RETORNE A LISTA.
             `;
             
             const text = await generateTechResponse(prompt, "TECH_DATA");
             setResult(text);
         } catch (e: any) {
-            // MOSTRAR O ERRO REAL PARA O USUÁRIO SABER O QUE FAZER
-            setResult(`ERRO: ${e.message || "Falha na conexão com a IA."}`);
+            setResult(`ERRO: ${e.message || "Falha na conexão."}`);
         } finally {
             setLoading(false);
         }

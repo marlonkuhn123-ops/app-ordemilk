@@ -14,16 +14,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     const handleLogin = () => {
         const input = password.trim();
 
-        // 1. LOGIN PADRÃO (SOLICITADO PELO USUÁRIO)
+        // 1. LOGIN PADRÃO
         if (input === 'om2026') {
             onLogin(true);
             return;
         }
 
-        // 2. BACKDOOR PARA API KEY (Opção técnica oculta)
-        // Se o usuário colar uma chave válida, salva e entra
+        // 2. BACKDOOR PARA API KEY (Desbloqueia e Salva)
         if (input.startsWith('AIza') && input.length > 30) {
             localStorage.setItem('om_key_v41_force', input);
+            localStorage.removeItem('om_env_blocked'); // GARANTE O DESBLOQUEIO
             setStatusMsg('✅ CHAVE SALVA! ENTRANDO...');
             setTimeout(() => {
                 onLogin(true);
@@ -59,7 +59,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     <div className="flex flex-col items-center">
                         <h1 className="flex items-baseline gap-2 mb-1">
                             <span className="font-inter font-black italic text-4xl tracking-tighter leading-none text-white">OM</span>
-                            <span className="font-inter font-black italic text-2xl tracking-tighter leading-none text-[#ce1126]">TECH V44</span>
+                            <span className="font-inter font-black italic text-2xl tracking-tighter leading-none text-[#ce1126]">TECH V47</span>
                         </h1>
                         <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-500">Acesso Restrito - Técnico</p>
                     </div>
