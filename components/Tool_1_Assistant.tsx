@@ -1,32 +1,50 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, SectionTitle, Button, FileUpload, Input, Select, AIOutputBox } from './UI';
+import { Card, SectionTitle, Button, FileUpload, Select, Input, AIOutputBox } from './UI';
 import { generateChatResponse, analyzePlateImage, generateTechResponse } from '../services/geminiService';
 import { ChatMessage, ElectricReading } from '../types';
+import { useGlobal } from '../contexts/GlobalContext';
 
 // --- SUB-COMPONENTE: BALÃO DE CHAT ---
 const ChatBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
     const isUser = msg.role === 'user';
+    const isError = msg.isError;
     
     const formatText = (text: string) => {
         return text.split('\n').map((line, i) => {
-            let content = line;
-            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            if (line.trim().startsWith('- ') || line.trim().startsWith('1. ')) {
-                return <li key={i} className="ml-4 pl-2 border-l-2 border-sky-400 mb-1" dangerouslySetInnerHTML={{__html: content}} />;
-            }
-            return <p key={i} className="mb-1" dangerouslySetInnerHTML={{__html: content}} />;
+            const parts = line.split(/(\*\*.*?\*\*)|(⚠️.*?):|(🔧.*?):|(✅.*?):/g); // Capture bold, and specific action prefixes
+            return (
+                <p key={i} className="min-h-[1em] mb-0.5">
+                     {line.trim().startsWith('* ') && <span className="inline-block w-1.5 h-1.5 mr-2 rounded-full bg-orange-500 opacity-80"></span>}
+                     {parts.map((part, j) => {
+                        if (part === undefined) return null;
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={j} className={isUser ? "text-white font-bold" : "text-orange-400 font-bold"}>{part.slice(2, -2)}</strong>;
+                        }
+                        if (part.startsWith('⚠️')) {
+                            return <span key={j} className="text-red-400 font-bold">{part}</span>;
+                        }
+                        if (part.startsWith('🔧')) {
+                            return <span key={j} className="text-yellow-400 font-bold">{part}</span>;
+                        }
+                        if (part.startsWith('✅')) {
+                            return <span key={j} className="text-emerald-400 font-bold">{part}</span>;
+                        }
+                        return part;
+                    })}
+                </p>
+            );
         });
     };
 
     return (
-        <div className={`flex flex-col max-w-[95%] ${isUser ? 'self-end items-end' : 'self-start items-start'}`}>
-            <div className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm
-                ${isUser 
-                    ? 'bg-emerald-700/90 text-white rounded-tr-sm border border-emerald-500/30' 
-                    : 'bg-slate-800/95 text-slate-200 rounded-tl-sm border border-slate-700'}`}>
+        <div className={`flex flex-col max-w-[95%] mb-3 animate-slide-up ${isUser ? 'self-end items-end' : 'self-start items-start'}`}>
+            <span className={`text-[8px] font-black uppercase mb-1 px-1 tracking-widest ${isUser ? 'text-gray-500' : 'text-orange-500'}`}>
+                {isUser ? 'TÉCNICO' : 'SUPERVISOR ORDEMILK'}
+            </span>
+            <div className={`p-4 rounded-xl text-sm leading-relaxed shadow-lg ${isUser ? 'bg-orange-700 text-white rounded-tr-sm' : 'bg-[#1a1a1a] text-gray-100 border border-[#333] rounded-tl-sm shadow-black/60'} ${isError ? 'bg-red-900/80 border-red-500 text-red-100' : ''}`}>
                 {msg.image && (
-                    <img src={msg.image} alt="Upload" className="w-full rounded-lg mb-2 border border-white/10" />
+                    <img src={msg.image} alt="Evidência" className="w-full rounded-lg mb-3 border border-white/10" />
                 )}
                 <div className="text-sm font-medium">
                     {formatText(msg.text)}
@@ -38,6 +56,7 @@ const ChatBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
 
 // --- FERRAMENTA 1: ASSISTENTE (CHAT + ELÉTRICA) ---
 export const Tool_Assistant: React.FC = () => {
+    const { techData } = useGlobal(); 
     const [activeTab, setActiveTab] = useState<'chat' | 'electric'>('chat');
 
     // --- CHAT IA ---
@@ -75,16 +94,19 @@ export const Tool_Assistant: React.FC = () => {
     const handleStartChat = async () => {
         if (!input && !selectedImage) return;
         setIsStarted(true);
-        await sendMessage(true);
+        await sendMessage();
     };
 
-    const sendMessage = async (isInitial = false) => {
-        if (!input && !isInitial) return;
+    const sendMessage = async () => { 
+        const textToSend = input;
+        if (!textToSend && !selectedImage) return;
+
         const userMsg: ChatMessage = {
             role: 'user',
-            text: isInitial ? `RELATO TÉCNICO: "${input}"` : input,
+            text: textToSend,
             image: selectedImage || undefined
         };
+        
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setSelectedImage(null);
@@ -98,28 +120,33 @@ export const Tool_Assistant: React.FC = () => {
             const imgBase64 = userMsg.image ? userMsg.image.split(',')[1] : undefined;
             const responseText = await generateChatResponse(apiHistory, userMsg.text, imgBase64);
             setMessages(prev => [...prev, { role: 'model', text: responseText }]);
-        } catch (error) {
-            setMessages(prev => [...prev, { role: 'model', text: "Erro de conexão.", isError: true }]);
+        } catch (error: any) {
+            setMessages(prev => [...prev, { role: 'model', text: "⚠️ FALHA DE CONEXÃO. Tente novamente.", isError: true }]);
         } finally {
             setIsLoadingChat(false);
         }
     };
 
-    const resetDiag = () => {
-        setMessages([]);
-        setIsStarted(false);
-        setInput('');
-        setSelectedImage(null);
+    const resetMessages = () => {
+        if(confirm("Reiniciar suporte do Supervisor?")) {
+            setMessages([]);
+            setIsStarted(false);
+            setInput(''); 
+            setSelectedImage(null);
+        }
     };
 
     const shareChatWhatsapp = () => {
         if (messages.length === 0) return;
         const historyText = messages.map(m => {
-            const sender = m.role === 'user' ? 'TÉCNICO' : 'IA';
-            return `*[${sender}]*: ${m.text}`;
+            const sender = m.role === 'user' ? 'TÉCNICO' : 'SUPERVISOR ORDEMILK';
+            // Format text to remove markdown bolding for WhatsApp plain text
+            const cleanText = m.text.replace(/\*\*(.*?)\*\*/g, '$1'); 
+            return `*[${sender}]*: ${cleanText}`;
         }).join('\n\n');
         
-        const fullText = `*DIAGNÓSTICO V33*\n\n${historyText}`;
+        // Ensure the specified prefix is used
+        const fullText = `*ORDEMILK Tech Assist*\n\n*DIAGNÓSTICO V33*\n\n${historyText}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(fullText)}`, '_blank');
     };
 
@@ -163,101 +190,81 @@ export const Tool_Assistant: React.FC = () => {
     };
 
     return (
-        <div className="animate-fadeIn">
-            <SectionTitle icon="fa-solid fa-wrench" title="1. CENTRAL DE APOIO" />
+        <div className="animate-fadeIn pb-24">
+            <SectionTitle icon="fa-solid fa-headset" title="1. SUPORTE DIRETO" />
             
-            <div className="flex gap-2 mb-4">
-                <button 
-                    onClick={() => setActiveTab('chat')}
-                    className={`flex-1 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        activeTab === 'chat' 
-                        ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/40 border border-sky-400/50' 
-                        : 'bg-slate-800 text-slate-500 border border-slate-700 hover:bg-slate-700'
-                    }`}
-                >
-                    <i className="fa-solid fa-comments mr-2"></i> IA / Chat
-                </button>
-                <button 
-                    onClick={() => setActiveTab('electric')}
-                    className={`flex-1 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        activeTab === 'electric' 
-                        ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/40 border border-yellow-400/50' 
-                        : 'bg-slate-800 text-slate-500 border border-slate-700 hover:bg-slate-700'
-                    }`}
-                >
-                    <i className="fa-solid fa-bolt mr-2"></i> Elétrica
-                </button>
+            <div className="flex justify-between items-center mb-3">
+                <div className="bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded text-[8px] font-black text-orange-500 uppercase tracking-widest animate-pulse">
+                    SUPERVISOR ATIVO
+                </div>
             </div>
 
-            <Card className="min-h-[60vh] flex flex-col">
+            <Card className="min-h-[65vh] flex flex-col border-t-4 border-t-orange-600 !bg-[#121212]">
                 {activeTab === 'chat' && (
                     <>
-                        {isStarted && (
-                            <div className="flex gap-2 mb-4">
-                                <button onClick={resetDiag} className="flex-1 py-2 bg-slate-800/50 rounded-lg text-[9px] uppercase font-bold text-slate-400 border border-slate-700 hover:text-white flex items-center justify-center gap-2">
-                                    <i className="fa-solid fa-rotate-right"></i> Reiniciar
-                                </button>
-                                <button onClick={shareChatWhatsapp} className="flex-1 py-2 bg-[#25D366]/20 rounded-lg text-[9px] uppercase font-bold text-[#25D366] border border-[#25D366]/50 hover:bg-[#25D366]/30 flex items-center justify-center gap-2">
-                                    <i className="fa-brands fa-whatsapp"></i> Compartilhar
-                                </button>
-                            </div>
-                        )}
-
                         {!isStarted ? (
-                            <div className="flex flex-col gap-4">
-                                <FileUpload onChange={handleImageUpload} label={selectedImage ? "Trocar Imagem" : "FOTO DO PROBLEMA"} />
-                                {selectedImage && <img src={selectedImage} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-slate-600" />}
-                                
-                                <div className="space-y-2">
-                                    <label className="text-[10px] text-slate-400 font-bold uppercase flex justify-between">
-                                        <span>Relato do Problema</span>
-                                        <span className="text-sky-500"><i className="fa-solid fa-user-doctor"></i> Supervisor Ativo</span>
-                                    </label>
+                            <div className="flex flex-col gap-4 py-4 animate-fadeIn">
+                                <div className="bg-[#1a1a1a] p-4 rounded-lg border border-[#333] shadow-inner">
+                                    <p className="text-xs text-gray-300 leading-relaxed font-bold">
+                                        "Tô na escuta. Qual a situação aí no campo? Manda o relato ou uma foto do painel."
+                                    </p>
+                                </div>
+
+                                <div className="space-y-1.5">
                                     <textarea 
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
                                         rows={4} 
-                                        className="w-full bg-black/40 border border-slate-700 text-white p-3 rounded-xl focus:border-sky-400 focus:outline-none placeholder-slate-600"
-                                        placeholder="Descreva o que está acontecendo..."
+                                        className="w-full p-4 rounded-xl focus:outline-none placeholder-gray-600 transition-all border bg-[#0a0a0a] border-[#333] text-white focus:border-orange-500 shadow-inner text-sm"
+                                        placeholder="Relate o problema (Ex: Alta pressão e desarme)..."
                                     />
-                                    <div className="bg-sky-900/20 border border-sky-800/50 p-3 rounded-lg flex items-start gap-2">
-                                        <i className="fa-solid fa-info-circle text-sky-500 mt-0.5 text-xs"></i>
-                                        <p className="text-[10px] text-sky-200 leading-tight">
-                                            <strong>DICA TÉCNICA:</strong> Para um diagnóstico mais rápido e preciso, se possível, informe as <strong>pressões de trabalho</strong> e a <strong>corrente</strong>.
-                                        </p>
-                                    </div>
                                 </div>
+
+                                <FileUpload onChange={handleImageUpload} label={selectedImage ? "FOTO CARREGADA" : "FOTO DO QUADRO / MANÔMETRO"} />
+                                {selectedImage && <img src={selectedImage} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-[#333]" />}
+
                                 <Button onClick={handleStartChat} disabled={!input && !selectedImage}>
-                                    INICIAR DIAGNÓSTICO
+                                    ACIONAR SUPERVISOR
                                 </Button>
                             </div>
                         ) : (
                             <>
-                                <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 max-h-[400px]">
+                                <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 max-h-[500px] flex flex-col scroll-smooth">
                                     {messages.map((m, i) => <ChatBubble key={i} msg={m} />)}
                                     {isLoadingChat && (
-                                        <div className="flex flex-col items-center justify-center gap-2 my-4 opacity-70">
-                                            <div className="flex gap-1">
-                                                <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"></div>
-                                                <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce delay-100"></div>
-                                                <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce delay-200"></div>
-                                            </div>
+                                        <div className="self-start items-start animate-pulse p-4 bg-[#1a1a1a] rounded-xl border border-[#333] flex gap-2">
+                                            <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                            <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                                         </div>
                                     )}
                                     <div ref={bottomRef} />
                                 </div>
-                                <div className="flex gap-2 mt-auto pt-4 border-t border-slate-700">
+                                
+                                <div className="flex gap-2 mt-auto pt-4 border-t border-[#333]">
+                                    <button onClick={resetMessages} className="w-12 h-12 rounded-xl bg-[#1a1a1a] text-gray-600 flex items-center justify-center border border-[#333] hover:text-red-500 transition-colors">
+                                        <i className="fa-solid fa-trash-can"></i>
+                                    </button>
                                     <input 
                                         type="text"
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                                         placeholder="Responda o supervisor..."
-                                        className="flex-1 bg-black/60 border border-slate-600 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-sky-400"
+                                        className="flex-1 rounded-xl px-4 text-sm focus:outline-none border bg-[#0a0a0a] border-[#333] text-white focus:border-orange-500 placeholder-gray-700"
                                     />
-                                    <button onClick={() => sendMessage()} disabled={isLoadingChat || !input} className="w-12 h-12 rounded-xl bg-sky-600 text-white flex items-center justify-center disabled:opacity-50 shadow-lg shadow-sky-900/20">
+                                    <button onClick={() => sendMessage()} disabled={isLoadingChat || !input} className="w-12 h-12 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-lg hover:bg-orange-500 disabled:opacity-30">
                                         <i className="fa-solid fa-paper-plane"></i>
                                     </button>
+                                    {messages.length > 0 && ( 
+                                        <button 
+                                            onClick={shareChatWhatsapp}
+                                            className="w-12 h-12 rounded-xl bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:bg-[#20bd5a] ml-2"
+                                            title="Compartilhar no WhatsApp"
+                                        >
+                                            <i className="fa-brands fa-whatsapp"></i>
+                                        </button>
+                                    )}
                                 </div>
                             </>
                         )}

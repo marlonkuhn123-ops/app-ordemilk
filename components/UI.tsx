@@ -1,34 +1,21 @@
 
-import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState } from 'react';
 
-// Industrial Tech Card
+// --- CARD INDUSTRIAL ---
 export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
-        <div className={`relative rounded-xl p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 animate-slide-up border border-t-white/10 ${
-            isDark 
-                ? 'bg-[#0f172a]/70 border-slate-700/60 shadow-black/50' 
-                : 'bg-white/80 border-slate-200 shadow-slate-200'
-        } ${className}`}>
+        <div className={`relative rounded-lg p-5 shadow-2xl transition-all duration-300 animate-slide-up 
+            bg-[#1e1e1e] border border-[#333333] shadow-black/80 ${className}`}>
             {children}
         </div>
     );
 };
 
+// --- TÍTULO DA SEÇÃO ---
 export const SectionTitle: React.FC<{ icon: string; title: string }> = ({ icon, title }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
-        <h2 className={`text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-[0.2em] transition-colors duration-300 ${
-            isDark ? 'text-cyan-400' : 'text-slate-700'
-        }`}>
-            <span className={`flex items-center justify-center w-6 h-6 rounded ${
-                isDark ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-900/50' : 'bg-slate-100 text-slate-600'
-            }`}>
+        <h2 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-[0.2em] text-white/90 select-none">
+            <span className="flex items-center justify-center w-6 h-6 rounded bg-[#2a2a2a] text-orange-500 border border-[#404040] shadow-sm">
                 <i className={`${icon} text-xs`}></i>
             </span>
             {title}
@@ -36,80 +23,63 @@ export const SectionTitle: React.FC<{ icon: string; title: string }> = ({ icon, 
     );
 };
 
+// --- BOTÃO INDUSTRIAL ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'danger' | 'success';
 }
 
+const BUTTON_VARIANTS = {
+    primary: "bg-orange-600 text-white border-orange-500 hover:bg-orange-500 shadow-orange-900/40 active:bg-orange-700",
+    secondary: "bg-[#2a2a2a] text-white border-[#404040] hover:bg-[#333] hover:border-gray-500 active:bg-[#222]",
+    danger: "bg-red-900/40 text-red-200 border-red-800 hover:bg-red-900/60 active:bg-red-900/80",
+    success: "bg-emerald-700 text-white border-emerald-600 hover:bg-emerald-600 active:bg-emerald-800"
+};
+
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
-    const baseStyle = "relative w-full py-3.5 px-6 rounded-lg font-bold text-xs tracking-widest transition-all duration-300 transform active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 overflow-hidden border uppercase";
-    
-    const variants = {
-        // Primary: Tech Blue/Cyan Gradient (Cooling Vibe)
-        primary: isDark 
-            ? "bg-gradient-to-r from-sky-700 to-blue-800 text-white border-blue-500/30 shadow-blue-900/20 hover:shadow-blue-900/40 hover:border-blue-400/50" 
-            : "bg-slate-900 text-white border-slate-700 hover:bg-slate-800",
-        // Secondary: Slate/Dark Grey
-        secondary: isDark
-            ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white"
-            : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200",
-        // Danger: Red (Warning)
-        danger: isDark
-            ? "bg-red-900/20 text-red-400 border-red-900/50 hover:bg-red-900/30"
-            : "bg-red-50 text-red-600 border-red-200"
-    };
-
     return (
-        <button className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
+        <button 
+            className={`relative w-full py-3.5 px-6 rounded-lg font-bold text-xs tracking-widest transition-transform duration-100 active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 overflow-hidden border uppercase disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${className}`} 
+            {...props}
+        >
             {children}
         </button>
     );
 };
 
+// --- INPUT INDUSTRIAL ---
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className = '', ...props }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
         <div className="mb-4 w-full group">
-            {label && <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1.5 ml-1 transition-colors ${
-                isDark ? 'text-slate-500 group-focus-within:text-cyan-400' : 'text-slate-500 group-focus-within:text-slate-800'
-            }`}>{label}</label>}
+            {label && <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 ml-1 transition-colors text-white group-focus-within:text-orange-500">
+                {label}
+            </label>}
             <input 
-                className={`w-full p-3.5 rounded-lg text-sm font-medium outline-none transition-all duration-300 border ${
-                    isDark 
-                        ? 'bg-[#0b1221]/80 border-slate-800 text-slate-200 focus:border-cyan-500/50 focus:bg-[#0f182b] focus:shadow-[0_0_10px_rgba(6,182,212,0.1)] placeholder-slate-700' 
-                        : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-slate-400 placeholder-slate-400'
-                } ${className}`}
+                className={`w-full p-3.5 rounded-lg text-sm font-medium outline-none transition-colors duration-300 border 
+                bg-[#252525] border-[#404040] text-white placeholder-gray-600 
+                focus:border-orange-500 focus:bg-[#2a2a2a] ${className}`}
                 {...props}
             />
         </div>
     );
 };
 
+// --- SELECT INDUSTRIAL ---
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, children, className = '', ...props }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
         <div className="mb-4 w-full group">
-            {label && <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1.5 ml-1 transition-colors ${
-                isDark ? 'text-slate-500 group-focus-within:text-cyan-400' : 'text-slate-500 group-focus-within:text-slate-800'
-            }`}>{label}</label>}
+            {label && <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 ml-1 transition-colors text-white group-focus-within:text-orange-500">
+                {label}
+            </label>}
             <div className="relative">
                 <select 
-                    className={`w-full p-3.5 rounded-lg text-sm font-medium outline-none transition-all duration-300 appearance-none border cursor-pointer ${
-                        isDark 
-                            ? 'bg-[#0b1221]/80 border-slate-800 text-slate-200 focus:border-cyan-500/50 focus:bg-[#0f182b]' 
-                            : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-slate-400'
-                    } ${className}`}
+                    className={`w-full p-3.5 rounded-lg text-sm font-medium outline-none transition-colors duration-300 appearance-none border cursor-pointer 
+                    bg-[#252525] border-[#404040] text-white 
+                    focus:border-orange-500 focus:bg-[#2a2a2a] ${className}`}
                     {...props}
                 >
                     {children}
                 </select>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white">
                     <i className="fa-solid fa-chevron-down text-xs"></i>
                 </div>
             </div>
@@ -117,104 +87,116 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { 
     );
 };
 
+// --- FILE UPLOAD INDUSTRIAL ---
 export const FileUpload: React.FC<{ onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; label: string; icon?: string }> = ({ onChange, label, icon = "fa-camera" }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
-        <label className={`group relative flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-md border cursor-pointer transition-all duration-300 mb-4 overflow-hidden active:scale-[0.98] ${
-            isDark 
-                ? 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800' 
-                : 'bg-white border-slate-300 hover:border-slate-400 hover:bg-slate-50'
-        }`}>
-            {/* HUD Accent Line Left */}
-            <div className={`absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-300 ${
-                 isDark ? 'bg-slate-800 group-hover:bg-cyan-500' : 'bg-slate-200 group-hover:bg-slate-400'
-            }`}></div>
+        <label className="group relative flex items-center justify-center gap-3 w-full py-3 px-4 rounded-lg border cursor-pointer transition-all duration-300 mb-4 overflow-hidden active:scale-[0.98]
+            bg-[#252525] border-[#404040] hover:border-orange-500/50 hover:bg-[#2a2a2a]">
+            
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] transition-colors duration-300 bg-[#404040] group-hover:bg-orange-500"></div>
 
-            <div className={`flex items-center justify-center transition-colors duration-300 ${
-                isDark ? 'text-cyan-500 group-hover:text-cyan-400' : 'text-slate-500 group-hover:text-slate-700'
-            }`}>
-                <i className={`fa-solid ${icon} text-xs`}></i>
+            <div className="flex items-center justify-center transition-colors duration-300 text-white group-hover:text-orange-500">
+                <i className={`fa-solid ${icon} text-sm`}></i>
             </div>
             
-            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${
-                isDark ? 'text-slate-400 group-hover:text-cyan-100' : 'text-slate-500 group-hover:text-slate-800'
-            }`}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 text-white group-hover:text-white">
                 {label}
             </span>
-
-            {/* HUD Corner Accent Right */}
-            <div className={`absolute right-0 bottom-0 w-2 h-2 border-r border-b transition-colors duration-300 ${
-                isDark ? 'border-slate-700 group-hover:border-cyan-500/50' : 'border-slate-300 group-hover:border-slate-500'
-            }`}></div>
             
             <input type="file" accept="image/*" className="hidden" onChange={onChange} />
         </label>
     );
 };
 
+// --- AI OUTPUT BOX INDUSTRIAL ---
 export const AIOutputBox: React.FC<{ content: string; isLoading: boolean; title?: string }> = ({ content, isLoading, title = "ANÁLISE DO SISTEMA" }) => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const shareWhatsapp = () => {
         if (!content) return;
-        const text = `*ORDEMILK TECH V33 - ${title}*\n\n${content}`;
+        // Updated message format as per prompt
+        const text = `*ORDEMILK Tech Assist*\n\n*${title}*\n\n${content}`;
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };
 
     if (isLoading) {
         return (
-            <div className={`mt-6 p-4 rounded-lg text-center border animate-pulse ${
-                isDark ? 'bg-slate-900/30 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}>
+            <div className="mt-6 p-4 rounded-lg text-center border animate-pulse bg-[#252525] border-[#333]">
                 <div className="flex flex-row items-center justify-center gap-3">
-                    <div className={`w-4 h-4 rounded-full animate-spin border-2 border-t-transparent ${
-                        isDark ? 'border-cyan-500' : 'border-slate-800'
-                    }`}></div>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Processando...</p>
+                    <div className="w-4 h-4 rounded-full animate-spin border-2 border-t-transparent border-orange-500"></div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white">Processando...</p>
                 </div>
             </div>
         );
     }
     if (!content) return null;
 
+    // Processamento leve do markdown simples (apenas negrito)
+    // Refactored to handle newlines as separate paragraphs
+    const formattedContent = content.split('\n').map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-2" />; // Empty line for spacing
+        
+        const parts = line.split(/(\*\*.*?\*\*)|(⚠️.*?):|(🔧.*?):|(✅.*?):/g); // Capture bold, and specific action prefixes
+        return (
+            <p key={i} className="min-h-[1.2em] mb-0.5">
+                {parts.map((part, j) => {
+                    if (part === undefined) return null;
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={j} className="text-orange-400 font-bold">{part.slice(2, -2)}</strong>;
+                    }
+                    if (part.startsWith('⚠️')) {
+                        return <span key={j} className="text-red-400 font-bold">{part}</span>;
+                    }
+                    if (part.startsWith('🔧')) {
+                        return <span key={j} className="text-yellow-400 font-bold">{part}</span>;
+                    }
+                    if (part.startsWith('✅')) {
+                        return <span key={j} className="text-emerald-400 font-bold">{part}</span>;
+                    }
+                    return part;
+                })}
+            </p>
+        );
+    });
+
     return (
-        <div className={`mt-6 rounded-lg overflow-hidden shadow-xl animate-slide-up border ${
-            isDark 
-                ? 'bg-[#0b1221] border-cyan-900/30 shadow-black/50' 
-                : 'bg-white border-slate-200 shadow-slate-200'
-        }`}>
-            <div className={`px-4 py-2.5 flex justify-between items-center border-b ${
-                isDark ? 'bg-cyan-950/10 border-cyan-900/30' : 'bg-slate-50 border-slate-200'
-            }`}>
+        <div className="mt-6 rounded-lg overflow-hidden shadow-xl animate-slide-up border bg-[#1a1a1a] border-[#333] shadow-black/50">
+            {/* CABEÇALHO */}
+            <div className="px-4 py-2.5 flex justify-between items-center border-b bg-[#222] border-[#333]">
                 <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDark ? 'bg-cyan-500' : 'bg-slate-800'}`}></div>
-                    <h3 className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-cyan-600' : 'text-slate-600'}`}>{title}</h3>
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-orange-500"></div>
+                    <h3 className="text-[9px] font-black uppercase tracking-widest text-orange-500 truncate max-w-[150px]">{title}</h3>
                 </div>
                 <button 
-                    onClick={() => navigator.clipboard.writeText(content)}
-                    className={`text-[9px] uppercase font-bold tracking-wider transition-colors ${
-                        isDark ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-800'
+                    onClick={handleCopy}
+                    className={`text-[9px] uppercase font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
+                        copied ? 'text-emerald-400' : 'text-white hover:text-orange-400'
                     }`}
                 >
-                    <i className="fa-regular fa-copy mr-1"></i> Copiar
+                    <i className={`fa-regular ${copied ? 'fa-circle-check' : 'fa-copy'}`}></i> 
+                    {copied ? 'COPIADO!' : 'COPIAR'}
                 </button>
             </div>
             
-            <div className={`p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                {content}
+            {/* CONTEÚDO */}
+            <div className="p-4 text-sm leading-relaxed font-mono text-xs text-gray-200 break-words">
+                {formattedContent}
             </div>
 
-            {/* BOTÃO WHATSAPP PADRÃO PARA TODAS AS FERRAMENTAS */}
-            <div className={`p-3 border-t ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50'}`}>
+            {/* RODAPÉ */}
+            <div className="p-3 border-t border-[#333] bg-[#222]">
                  <button 
                     onClick={shareWhatsapp}
-                    className="w-full py-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest bg-[#25D366] text-white shadow-lg hover:bg-[#20bd5a] hover:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-lg font-bold text-[10px] uppercase tracking-widest bg-[#25D366] text-white shadow-lg hover:bg-[#20bd5a] hover:scale-[0.99] transition-all flex items-center justify-center gap-2"
                 >
-                    <i className="fa-brands fa-whatsapp text-sm"></i> Compartilhar no WhatsApp
+                    <i className="fa-brands fa-whatsapp text-sm"></i> Compartilhar
                 </button>
             </div>
         </div>

@@ -2,96 +2,109 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants";
 
-const getApiKey = () => {
-    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
-        return (window as any).process.env.API_KEY;
+const handleApiError = (error: any) => {
+    console.error("Gemini API Error:", error);
+    const msg = error?.message || "";
+    
+    if (msg.includes("429") || msg.includes("quota")) {
+        return "⚠️ LIMITE DE USO EXCEDIDO: O sistema atingiu o limite de consultas gratuitas por minuto. Aguarde 60 segundos.";
     }
-    return "";
+    return "⚠️ ERRO DE CONEXÃO: Verifique sua internet ou tente novamente.";
 };
 
-const API_KEY = getApiKey();
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-const MODEL_NAME = 'gemini-3-flash-preview';
-
+/**
+ * Generates a response for technical tools using the specified prompt and context.
+ */
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
-    if (!API_KEY) return "ERRO: Chave API não configurada.";
-
-    const toolInstruction = (TOOL_PROMPTS as any)[toolType] || "";
-    const fullSystemInstruction = `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${toolInstruction}`;
-
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: { role: "user", parts: [{ text: userPrompt }] },
+            model: 'gemini-3-flash-preview',
+            contents: userPrompt,
             config: {
-                systemInstruction: fullSystemInstruction,
-                temperature: 0.0, // TEMPERATURA ZERO: Impede improvisação. A IA torna-se determinística.
-                maxOutputTokens: 2000,
+                systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${(TOOL_PROMPTS as any)[toolType] || ""}`,
+                temperature: 0.1,
+                topP: 0.8
             }
         });
 
-        return response.text || "Sem resposta da IA.";
+        return response.text || "";
     } catch (error: any) {
-        console.error("Gemini API Error:", error);
-        return "Serviço indisponível no momento. Verifique sua conexão.";
+        throw new Error(handleApiError(error));
     }
 };
 
+/**
+ * Generates a response for the interactive diagnostic chat.
+ */
 export const generateChatResponse = async (
-    history: { role: string; parts: any[] }[], 
-    newMessage: string, 
+    history: { role: string; parts: any[] }[],
+    newMessage: string,
     imageBase64?: string
 ) => {
-    if (!API_KEY) return "ERRO: Chave API não configurada.";
-
-    const contents = history.map(h => ({ role: h.role, parts: h.parts }));
-    
-    const newParts: any[] = [{ text: newMessage }];
-    if (imageBase64) {
-        newParts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
-    }
-    contents.push({ role: "user", parts: newParts });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
+        const contents = [...history];
+        const currentParts: any[] = [{ text: newMessage }];
+        
+        if (imageBase64) {
+            currentParts.push({
+                inlineData: {
+                    data: imageBase64,
+                    mimeType: 'image/jpeg',
+                },
+            });
+        }
+        
+        contents.push({ role: 'user', parts: currentParts });
+
         const response = await ai.models.generateContent({
-            model: MODEL_NAME,
+            model: 'gemini-3-pro-preview',
             contents: contents,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.DIAGNOSTIC}`,
-                temperature: 0.0 // TEMPERATURA ZERO: Impede improvisação no chat.
+                temperature: 0.2,
+                topP: 0.9
             }
         });
         
-        return response.text || "Sem resposta.";
+        return response.text || "";
+
     } catch (error: any) {
-        console.error("Chat Error:", error);
-        return "Erro de comunicação com a IA.";
+        throw new Error(handleApiError(error));
     }
 };
 
+/**
+ * Analyzes an image of a motor plate to extract technical data.
+ */
 export const analyzePlateImage = async (imageBase64: string) => {
-    if (!API_KEY) return "{}";
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-    const prompt = "Leia a placa do motor. Retorne APENAS JSON: {volts: numero, amps: numero, phase: 'tri'|'bi'|'mono'}. Se não conseguir ler com certeza absoluta, retorne {}.";
-    
     try {
         const response = await ai.models.generateContent({
-            model: MODEL_NAME,
+            model: 'gemini-3-flash-preview',
             contents: {
                 parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }
+                    {
+                        inlineData: {
+                            data: imageBase64,
+                            mimeType: 'image/jpeg',
+                        },
+                    },
+                    { text: "Analise a placa deste motor ou compressor. Extraia APENAS os dados técnicos em JSON: {volts: string, amps: string, phase: 'tri'|'mono', model: string}." }
                 ]
             },
             config: {
-                responseMimeType: "application/json",
-                temperature: 0.0 // Leitura OCR precisa ser exata.
+                responseMimeType: "application/json"
             }
         });
-
+        
         return response.text || "{}";
     } catch (error) {
-        console.error("Image Analysis Error:", error);
+        console.error("Plate Analysis Error:", error);
         return "{}";
     }
 };

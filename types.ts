@@ -1,14 +1,13 @@
 
+
 export enum ViewState {
     DIAGNOSTIC = 'diag',
     ERRORS = 'errors',
-    REPORT = 'report',
     CALCULATOR = 'calc',
     SIZING = 'sizing',
+    REPORT = 'report',
     TECH_DATA = 'tech_data'
 }
-
-export type Theme = 'light' | 'dark';
 
 export interface ChatMessage {
     role: 'user' | 'model';

@@ -1,22 +1,58 @@
 
 import React, { useState } from 'react';
-import { Card, SectionTitle, Button, Select, AIOutputBox } from './UI';
-import { generateTechResponse } from '../services/geminiService';
+import { Card, SectionTitle, Button, Select, AIOutputBox } from './UI'; // Updated import path
+import { GoogleGenAI } from "@google/genai"; // Re-added direct import
+import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants"; // Re-added imports
 
-// --- FERRAMENTA 6: DADOS TÉCNICOS (CATÁLOGO) ---
 export const Tool_Catalog: React.FC = () => {
-    const [volume, setVolume] = useState('4000L');
+    const [volume, setVolume] = useState('RESFRIADOR 4 MIL LITROS 220V 3F - 2 COMPRESSOR MT 50');
     const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
 
     const fetchData = async () => {
+        // --- API KEY LOGIC - STRICTLY PRESERVED PER USER INSTRUCTIONS ---
+        // Using process.env.API_KEY as explicitly requested by coding guidelines.
+        const apiKey = process.env.API_KEY; 
+        if (!apiKey) {
+            console.warn("DEBUG: API Key is undefined or empty for Tool_6_Catalog.tsx. This usually indicates an environment configuration issue.");
+            setResult("ERRO CRÍTICO: API Key não configurada. Verifique o arquivo .env ou o ambiente de deploy.");
+            return;
+        }
+
         setLoading(true);
+        setResult(""); 
+        
         try {
-            const prompt = `Forneça a Ficha Técnica para o modelo ${volume}. Liste apenas: Compressores, Solenoide, Válvula Expansão, Fluido Refrigerante (Kg) e Cabo. Use formato de lista simples.`;
-            const text = await generateTechResponse(prompt, "TECH_DATA");
-            setResult(text);
-        } catch (e) {
-            setResult("Erro ao buscar dados técnicos.");
+            // Initializing GoogleGenAI directly within this component using the specific apiKey.
+            const ai = new GoogleGenAI({ apiKey });
+            
+            const prompt = `
+            TAREFA: CONSULTA ESTRITA NA BASE DE DADOS V35.
+            MODELO SOLICITADO: ${volume}.
+            
+            PROTOCOLO:
+            1. Busque este cabeçalho EXATO na "BASE DE DADOS DOS EQUIPAMENTOS".
+            2. Liste TODOS os itens (Código, Descrição e Quantidade) que estão abaixo deste cabeçalho.
+            3. Formate como uma tabela ou lista limpa.
+            
+            REGRA CRÍTICA DE SAÍDA:
+            - NÃO FALE NADA.
+            - APENAS RETORNE A LISTA.
+            `;
+
+            // Using the specific model ('gemini-3-flash-preview') as in the original provided file.
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.TECH_DATA}`,
+                    temperature: 0.1
+                }
+            });
+
+            setResult(response.text || "Nenhum dado encontrado para este modelo.");
+        } catch (e: any) {
+            setResult(`ERRO: ${e.message || "Falha na conexão com a API."}`);
         } finally {
             setLoading(false);
         }
@@ -24,38 +60,58 @@ export const Tool_Catalog: React.FC = () => {
 
     return (
         <div className="animate-fadeIn">
-            <SectionTitle icon="fa-solid fa-book-open" title="6. DADOS TÉCNICOS (BOM)" />
+            <SectionTitle icon="fa-solid fa-boxes-stacked" title="6. DADOS TÉCNICOS (BOM)" />
             <Card>
                 <div className="mb-4">
                     <p className="text-[10px] text-slate-400 mb-2 font-bold uppercase tracking-widest">
-                        SELECIONE O MODELO (PADRÃO FÁBRICA)
+                        SELECIONE O MODELO EXATO (LISTA OFICIAL)
                     </p>
                     <Select 
                         value={volume} 
                         onChange={(e) => setVolume(e.target.value)}
                         label="Modelo do Equipamento"
                     >
-                        <optgroup label="LINHA MTZ (Pequeno/Médio)">
-                            <option value="500L">500 a 650 Litros</option>
-                            <option value="800L">800 Litros</option>
-                            <option value="1000L">1.000 Litros</option>
-                            <option value="1300L">1.300 Litros</option>
-                            <option value="1600L">1.600 Litros</option>
-                            <option value="2000L">2.000 Litros</option>
-                            <option value="2500L">2.500 Litros</option>
-                            <option value="3000L">3.000 Litros</option>
+                        <optgroup label="4.000 LITROS (2 COMPRESSORES)">
+                            <option value="RESFRIADOR 4 MIL LITROS 220V 3F - 2 COMPRESSOR MT 50">4.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 4 MIL LITROS 220V MONO - 2 COMPRESSOR MT 50">4.000L - 220V Monofásico</option>
+                            <option value="RESFRIADOR 4 MIL LITROS 380V 3F - 2 COMPRESSOR MT 50">4.000L - 380V Trifásico</option>
                         </optgroup>
-                        <optgroup label="LINHA INDUSTRIAL (MT)">
-                            <option value="4000L">4.000 Litros (2x MT-50)</option>
-                            <option value="6000L">6.000 Litros (3x MT-50)</option>
-                            <option value="10000L">10.000 Litros (3x MT-100)</option>
-                            <option value="12000L">12.000 Litros (3x MT-100)</option>
-                            <option value="15000L">15.000 Litros (3x MT-125)</option>
-                            <option value="20000L">20.000 Litros (4x MT-125)</option>
+
+                        <optgroup label="6.000 LITROS (3 COMPRESSORES)">
+                            <option value="RESFRIADOR 6 MIL LITROS 220 V MONO - 3 COMPRESSOR MT 50">6.000L - 220V Monofásico</option>
+                            <option value="RESFRIADOR 6 MIL LITROS 220V 3F - 3 COMPRESSOR MT 50">6.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 6 MIL LITROS 380V 3 F - 3 COMPRESSOR MT 50">6.000L - 380V Trifásico</option>
+                        </optgroup>
+
+                        <optgroup label="10.000 LITROS (3 COMPRESSORES)">
+                            <option value="RESFRIADOR 10 MIL LITROS 220V 3F - 3 COMPRESSORES MT100">10.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 10 MIL LITROS 380V 3F - 3 COMPRESSORES MT100">10.000L - 380V Trifásico</option>
+                        </optgroup>
+
+                        <optgroup label="12.000 LITROS (3 COMPRESSORES)">
+                            <option value="RESFRIADOR 12 MIL LITROS 220V 3F - 3 COMPRESSORES MT100">12.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 12 MIL LITROS 380V 3F - 3 COMPRESSORES MT100">12.000L - 380V Trifásico</option>
+                        </optgroup>
+
+                        <optgroup label="15.000 LITROS (3 COMPRESSORES)">
+                            <option value="RESFRIADOR 15 MIL LITROS 220V 3F - 3 COMPRESSORES MT125">15.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 15 MIL LITROS 380V 3F - 3 COMPRESSORES MT125">15.000L - 380V Trifásico</option>
+                        </optgroup>
+
+                        <optgroup label="20.000 LITROS (4 COMPRESSORES)">
+                            <option value="RESFRIADOR 20 MIL LITROS 220V 3F - 4 COMPRESSORES MT125">20.000L - 220V Trifásico</option>
+                            <option value="RESFRIADOR 20 MIL LITROS 380V 3F - 4 COMPRESSORES MT125">20.000L - 380V Trifásico</option>
                         </optgroup>
                     </Select>
                 </div>
                 
+                <div className="mb-4 p-3 rounded-lg border bg-[#252525] border-[#404040] flex items-start gap-2">
+                    <i className="fa-solid fa-database text-orange-500 mt-0.5 text-xs"></i>
+                    <p className="text-[10px] text-gray-300 leading-tight">
+                        Consulta <strong>ESTRITA</strong> à Base V35 (Engenharia). Dados oficiais de fábrica.
+                    </p>
+                </div>
+
                 <Button onClick={fetchData} disabled={loading}>
                     <i className="fa-solid fa-microchip mr-2"></i>
                     CONSULTAR FICHA TÉCNICA
@@ -64,7 +120,7 @@ export const Tool_Catalog: React.FC = () => {
                 <AIOutputBox 
                     content={result} 
                     isLoading={loading} 
-                    title={`BOM - ${volume}`} 
+                    title="FICHA TÉCNICA OFICIAL (BOM)" 
                 />
             </Card>
         </div>

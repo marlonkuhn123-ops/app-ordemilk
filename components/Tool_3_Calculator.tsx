@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Card, SectionTitle, Button, Input, Select, AIOutputBox } from './UI';
 import { generateTechResponse } from '../services/geminiService';
 import { CalcMode, Refrigerant } from '../types';
-import { useTheme } from '../contexts/ThemeContext';
 
 // --- FERRAMENTA 3: CALCULADORA DE GÁS ---
 export const Tool_Calculator: React.FC = () => {
@@ -14,19 +13,33 @@ export const Tool_Calculator: React.FC = () => {
     const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     const run = async () => {
         if (!press || !temp) return;
         setLoading(true);
         try {
+            // Prompt Robótico e Preciso, com instruções para incluir recomendações
             const prompt = `
-            DADOS TÉCNICOS:
-            - Fluido: ${fluid}
-            - Pressão Lida (Manômetro): ${press} PSI
-            - Temperatura Lida (Termômetro): ${temp} °C
-            - Modo de Cálculo: ${mode === 'SH' ? 'Superaquecimento (Sucção)' : 'Sub-resfriamento (Líquido)'}
+            COMANDO: CALCULAR ${mode === 'SH' ? 'Superaquecimento (SH)' : 'Sub-resfriamento (SC)'}.
+            DADOS: Fluido ${fluid}, Pressão ${press} PSI, Temperatura ${temp} °C.
+            
+            CONTEXTO DE REFERÊNCIA:
+            - Faixa IDEAL para Superaquecimento (SH): 7K a 12K.
+            - Faixa IDEAL para Sub-resfriamento (SC): 4K a 8K.
+            
+            INSTRUÇÃO DE SAÍDA (Obrigatório seguir este formato):
+            NÃO use formatação Markdown, LaTeX, negrito ou itálico. Não use símbolos como $ ou \textbf. Apenas texto puro e direto.
+            1. Apresente o cálculo matemático do ${mode === 'SH' ? 'Superaquecimento (SH)' : 'Sub-resfriamento (SC)'} em Kelvin (K).
+            2. Classifique o resultado como "DENTRO da faixa ideal", "ALTO" ou "BAIXO", comparando com as faixas de referência acima.
+            3. Adicione uma **AÇÃO RECOMENDADA** prática e concisa, baseada na classificação:
+                - Se SH estiver ALTO (acima de 12K): \n🔧 AÇÃO RECOMENDADA: Falta de fluido. Adicione carga de gás aos poucos e monitore.
+                - Se SH estiver BAIXO (abaixo de 7K): \n⚠️ AÇÃO RECOMENDADA: Risco de retorno de líquido! Recolha fluido ou verifique se o evaporador está sujo/bloqueado.
+                - Se SH estiver DENTRO (entre 7K e 12K): \n✅ AÇÃO: Sistema equilibrado. Não é necessário intervir.
+                
+                - Se SC estiver ALTO (acima de 8K): \n⚠️ AÇÃO RECOMENDADA: Supercarga de fluido ou restrição na linha de líquido. Verifique a carga e a válvula de expansão.
+                - Se SC estiver BAIXO (abaixo de 4K): \n🔧 AÇÃO RECOMENDADA: Subcarga de fluido ou entrada de ar/umidade. Verifique vazamentos e vácuo.
+                - Se SC estiver DENTRO (entre 4K e 8K): \n✅ AÇÃO: Sistema equilibrado. Não é necessário intervir.
+            
+            Comece a resposta diretamente com o cálculo.
             `;
             const text = await generateTechResponse(prompt, "CALC");
             setResult(text);
@@ -53,10 +66,7 @@ export const Tool_Calculator: React.FC = () => {
                     <option value="SR">Sub-resfriamento (Alta/Líquido)</option>
                 </Select>
 
-                {/* AVISO TÉCNICO DE POSIÇÃO DE MEDIÇÃO */}
-                <div className={`mb-4 p-3 rounded-lg border text-[10px] font-medium leading-relaxed flex items-start gap-2 transition-colors ${
-                    isDark ? 'bg-blue-900/20 border-blue-800 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-700'
-                }`}>
+                <div className={`mb-4 p-3 rounded-lg border text-[10px] font-medium leading-relaxed flex items-start gap-2 transition-colors bg-blue-900/20 border-blue-800 text-blue-200`}>
                     <i className="fa-solid fa-circle-info mt-0.5 text-xs text-blue-400"></i>
                     <span>
                         {mode === 'SH' 

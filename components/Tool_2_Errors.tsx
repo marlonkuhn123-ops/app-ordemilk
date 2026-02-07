@@ -14,7 +14,15 @@ export const Tool_Errors: React.FC = () => {
         if (!code) return;
         setLoading(true);
         try {
-            const prompt = `Controlador: ${model}. Código: ${code}. O que significa e como resolver? Responda curto.`;
+            // Prompt Robótico
+            const prompt = `
+            COMANDO: BUSCAR CÓDIGO DE ERRO.
+            CONTROLADOR: ${model || 'Genérico'}.
+            CÓDIGO: ${code}.
+            
+            INSTRUÇÃO: Retorne APENAS o significado técnico e a solução direta.
+            SEM BOM DIA. SEM TEXTO DE APOIO. APENAS O DADO TÉCNICO.
+            `;
             const text = await generateTechResponse(prompt, "ERRORS");
             setResult(text);
         } catch (e) { setResult("Erro ao processar."); }
@@ -28,7 +36,7 @@ export const Tool_Errors: React.FC = () => {
                 <Input label="Modelo do Controlador" placeholder="Ex: Full Gauge, TC-900..." value={model} onChange={e => setModel(e.target.value)} />
                 <Input label="Código no Visor ou Sintoma de Sujeira" placeholder="Ex: E1, AH, Pedra do Leite, Gordura..." value={code} onChange={e => setCode(e.target.value)} />
                 <Button onClick={run} disabled={loading}>ANALISAR FALHA</Button>
-                <AIOutputBox content={result} isLoading={loading} />
+                <AIOutputBox content={result} isLoading={loading} title="DIAGNÓSTICO DO ERRO" />
             </Card>
         </div>
     );
