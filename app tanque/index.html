@@ -49,17 +49,18 @@
     </style>
 
     <script>
-        // SHIM GLOBAL: Garante que process.env.API_KEY esteja disponível para o SDK
+        // SHIM GLOBAL: Garante que a chave definida no seu .env ou ambiente chegue ao SDK
         window.process = window.process || { env: {} };
         
-        // Tenta capturar de múltiplas fontes comuns em builds Vite/Vercel
-        const apiKey = (typeof importMetaEnv !== 'undefined' && (importMetaEnv.VITE_GOOGLE_API_KEY || importMetaEnv.VITE_API_KEY))
-                    || (window._env_ && window._env_.VITE_GOOGLE_API_KEY)
-                    || (process.env.VITE_GOOGLE_API_KEY);
-
-        if (apiKey) {
-            process.env.API_KEY = apiKey;
+        // Mapeia VITE_GOOGLE_API_KEY para process.env.API_KEY
+        // Isso resolve o erro de "API Key must be set"
+        if (typeof importMetaEnv !== 'undefined' && importMetaEnv.VITE_GOOGLE_API_KEY) {
+            process.env.API_KEY = importMetaEnv.VITE_GOOGLE_API_KEY;
+        } else if (window._env_ && window._env_.VITE_GOOGLE_API_KEY) {
+            process.env.API_KEY = window._env_.VITE_GOOGLE_API_KEY;
         }
+        
+        // Se a chave não estiver nos objetos acima, ela será injetada diretamente no process.env.API_KEY pelo ambiente
     </script>
 
     <script type="importmap">

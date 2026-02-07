@@ -1,9 +1,9 @@
 
-import React, { memo } from 'react';
+import React from 'react'; // Removed memo, use standard React.FC
 import { ViewState } from '../types';
 
 // --- CABEÇALHO (TOPO) ---
-export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
+export const Header: React.FC<{ isOnline: boolean; onStartTutorial: () => void }> = ({ isOnline, onStartTutorial }) => {
     return (
         <div className="pt-safe pb-3 px-6 sticky top-0 z-30 transition-colors duration-500 backdrop-blur-md border-b bg-[#121212]/90 border-[#333]">
             <div className="flex justify-between items-end max-w-2xl mx-auto pt-2">
@@ -30,6 +30,15 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                 </div>
                 
                 <div className="flex items-center gap-3 mb-1">
+                    {/* Botão Tutorial */}
+                    <button 
+                        onClick={onStartTutorial}
+                        className="w-8 h-8 rounded-full flex items-center justify-center transition-all border bg-slate-800 text-sky-400 border-slate-700 hover:bg-slate-700"
+                        title="Iniciar Treinamento"
+                    >
+                        <i className="fa-solid fa-circle-question text-sm"></i>
+                    </button>
+
                     <div className={`px-2 py-1 rounded-md flex items-center gap-1.5 border ${
                         isOnline 
                             ? 'border-emerald-900/50 bg-emerald-900/10 text-emerald-400' 
@@ -53,7 +62,7 @@ interface NavItemProps {
     onClick: (id: ViewState) => void;
 }
 
-const NavItem: React.FC<NavItemProps> = memo(({ id, icon, label, isActive, onClick }) => {
+const NavItem: React.FC<NavItemProps> = ({ id, icon, label, isActive, onClick }) => { // Removed memo
     return (
         <button 
             onClick={() => onClick(id)}
@@ -62,43 +71,32 @@ const NavItem: React.FC<NavItemProps> = memo(({ id, icon, label, isActive, onCli
             }`}
         >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                isActive 
-                    ? 'bg-[#2a2a2a] text-orange-500 border border-[#404040] shadow-[0_0_10px_rgba(249,115,22,0.4)]' 
-                    : 'bg-transparent text-white'
+                isActive ? 'bg-orange-600 text-white shadow-lg' : 'bg-[#1a1a1a] text-gray-500 group-hover:bg-[#222]'
             }`}>
-                <i className={`${icon} text-base`}></i>
+                <i className={`${icon} ${isActive ? 'text-lg' : 'text-sm'}`}></i>
             </div>
-            <span className={`text-[8px] font-bold uppercase tracking-tight whitespace-nowrap ${
-                isActive ? 'text-orange-500' : 'text-white'
+            <span className={`text-[8px] font-bold uppercase tracking-wider transition-all duration-300 ${
+                isActive ? 'text-orange-500' : 'text-gray-500 group-hover:text-gray-300'
             }`}>
                 {label}
             </span>
+            {isActive && <div className="absolute top-[calc(100%-4px)] w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>}
         </button>
     );
-});
+};
 
-const NAV_ITEMS = [
-    { id: ViewState.DIAGNOSTIC, icon: 'fa-solid fa-robot', label: '1.SUPORTE' },
-    { id: ViewState.ERRORS, icon: 'fa-solid fa-triangle-exclamation', label: '2.Erros' },
-    { id: ViewState.CALCULATOR, icon: 'fa-solid fa-calculator', label: '3.Calc' },
-    { id: ViewState.SIZING, icon: 'fa-solid fa-ruler-combined', label: '4.Dim' },
-    { id: ViewState.REPORT, icon: 'fa-solid fa-file-contract', label: '5.Serviço' },
-    { id: ViewState.TECH_DATA, icon: 'fa-solid fa-boxes-stacked', label: '6.Dados' },
-];
-
-export const BottomNav: React.FC<{ activeView: ViewState; setView: (v: ViewState) => void }> = memo(({ activeView, setView }) => {
+// --- NAVEGAÇÃO INFERIOR (FOOTER) ---
+export const BottomNav: React.FC<{ activeView: ViewState; setView: (view: ViewState) => void }> = ({ activeView, setView }) => {
     return (
-        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[96%] max-w-[520px] z-50">
-            <div className="rounded-xl py-2 px-1 shadow-2xl backdrop-blur-xl border flex overflow-x-auto no-scrollbar justify-between items-center bg-[#1e1e1e]/95 border-[#333] shadow-black/80">
-                {NAV_ITEMS.map(item => (
-                    <NavItem 
-                        key={item.id} 
-                        {...item} 
-                        isActive={activeView === item.id} 
-                        onClick={setView} 
-                    />
-                ))}
+        <nav className="fixed bottom-0 left-0 right-0 z-20 pb-safe pt-2 px-4 backdrop-blur-md bg-[#121212]/90 border-t border-[#333]">
+            <div className="flex justify-around items-center max-w-2xl mx-auto">
+                <NavItem id={ViewState.DIAGNOSTIC} icon="fa-solid fa-headset" label="Assistente" isActive={activeView === ViewState.DIAGNOSTIC} onClick={setView} />
+                <NavItem id={ViewState.ERRORS} icon="fa-solid fa-triangle-exclamation" label="Erros" isActive={activeView === ViewState.ERRORS} onClick={setView} />
+                <NavItem id={ViewState.CALCULATOR} icon="fa-solid fa-calculator" label="Cálculo" isActive={activeView === ViewState.CALCULATOR} onClick={setView} />
+                <NavItem id={ViewState.SIZING} icon="fa-solid fa-ruler-combined" label="Dimens." isActive={activeView === ViewState.SIZING} onClick={setView} />
+                <NavItem id={ViewState.REPORT} icon="fa-solid fa-file-signature" label="Relatório" isActive={activeView === ViewState.REPORT} onClick={setView} />
+                <NavItem id={ViewState.TECH_DATA} icon="fa-solid fa-boxes-stacked" label="Catálogo" isActive={activeView === ViewState.TECH_DATA} onClick={setView} />
             </div>
-        </div>
+        </nav>
     );
-});
+};

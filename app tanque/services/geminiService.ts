@@ -9,7 +9,6 @@ const handleApiError = (error: any) => {
     if (msg.includes("429") || msg.includes("quota")) {
         return "⚠️ LIMITE DE USO EXCEDIDO: O sistema atingiu o limite de consultas gratuitas por minuto. Aguarde 60 segundos.";
     }
-    // Guidelines: Application must not ask the user for the key or expose environment configuration details in UI.
     return "⚠️ ERRO DE CONEXÃO: Verifique sua internet ou tente novamente.";
 };
 
@@ -17,7 +16,6 @@ const handleApiError = (error: any) => {
  * Generates a response for technical tools using the specified prompt and context.
  */
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
-    // Correctly using process.env.API_KEY directly as per library initialization guidelines
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
@@ -31,7 +29,6 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
             }
         });
 
-        // Use response.text property directly
         return response.text || "";
     } catch (error: any) {
         throw new Error(handleApiError(error));
@@ -46,7 +43,6 @@ export const generateChatResponse = async (
     newMessage: string,
     imageBase64?: string
 ) => {
-    // Creating a fresh GoogleGenAI instance for the request as per guidelines
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
@@ -64,7 +60,6 @@ export const generateChatResponse = async (
         
         contents.push({ role: 'user', parts: currentParts });
 
-        // Using gemini-3-pro-preview for complex reasoning tasks in diagnostic chat
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: contents,
@@ -75,7 +70,6 @@ export const generateChatResponse = async (
             }
         });
         
-        // Use response.text property directly
         return response.text || "";
 
     } catch (error: any) {
@@ -87,13 +81,11 @@ export const generateChatResponse = async (
  * Analyzes an image of a motor plate to extract technical data.
  */
 export const analyzePlateImage = async (imageBase64: string) => {
-    // Initializing with process.env.API_KEY directly
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            // Correctly structured multi-part contents with an explicit parts array
             contents: {
                 parts: [
                     {
@@ -110,7 +102,6 @@ export const analyzePlateImage = async (imageBase64: string) => {
             }
         });
         
-        // Directly accessing .text property
         return response.text || "{}";
     } catch (error) {
         console.error("Plate Analysis Error:", error);

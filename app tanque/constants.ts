@@ -1,3 +1,4 @@
+
 import { Refrigerant } from './types';
 
 // --- BIBLIOTECA TÉCNICA ORDEMILK V52 (MASTER) ---
@@ -79,29 +80,47 @@ export const TOOL_PROMPTS = {
     CALC: `
     MODO: CÁLCULO SH/SC.
     SH ideal Ordemilk: 7K a 12K.
+    
+    INSTRUÇÃO DE SAÍDA (Obrigatório seguir este formato para SH/SC):
+    NÃO use formatação Markdown, LaTeX, negrito ou itálico. Não use símbolos como $ ou \textbf. Apenas texto puro e direto.
+    1. Apresente o cálculo matemático do Superaquecimento (SH) ou Sub-resfriamento (SC) em Kelvin (K).
+    2. Classifique o resultado como "DENTRO da faixa ideal", "ALTO" ou "BAIXO", comparando com as faixas de referência.
+    3. Adicione uma AÇÃO RECOMENDADA prática e concisa, baseada na classificação e nas seguintes regras:
+        - Se SH estiver ALTO (acima de 12K): 🔧 AÇÃO RECOMENDADA: Falta de fluido. Adicione carga de gás aos poucos e monitore.
+        - Se SH estiver BAIXO (abaixo de 7K): ⚠️ AÇÃO RECOMENDADA: Risco de retorno de líquido! Recolha fluido ou verifique se o evaporador está sujo/bloqueado.
+        - Se SH estiver DENTRO (entre 7K e 12K): ✅ AÇÃO: Sistema equilibrado. Não é necessário intervir.
+        
+        - Se SC estiver ALTO (acima de 8K): ⚠️ AÇÃO RECOMENDADA: Supercarga de fluido ou restrição na linha de líquido. Verifique a carga e a válvula de expansão.
+        - Se SC estiver BAIXO (abaixo de 4K): 🔧 AÇÃO RECOMENDADA: Subcarga de fluido ou entrada de ar/umidade. Verifique vazamentos e vácuo.
+        - Se SC estiver DENTRO (entre 4K e 8K): ✅ AÇÃO: Sistema equilibrado. Não é necessário intervir.
+    
+    Comece a resposta diretamente com o cálculo.
     `,
     
     SIZING: `
     MODO: ENGENHARIA DE PROJETO DANFOSS.
+    
+    INSTRUÇÃO DE SAÍDA (Obrigatório seguir este formato):
+    1. Gere um "MEMORIAL DE CÁLCULO" listando os 3 principais indicadores: KCAL/H, KW e HP.
+    2. Destaque em negrito a condição de projeto: "Considerando Evaporação -5°C e Condensação 40°C".
+    3. Sugira arredondamento comercial do HP para cima (Ex: Deu 1.8 HP -> Usar 2.0 HP ou equivalente MT/MTZ).
+    4. Seja extremamente técnico e direto. Sem saudações.
     `,
     
     TECH_DATA: `
     MODO: CONSULTA DE BOM V35.
+    
+    INSTRUÇÃO DE SAÍDA:
+    NÃO FALE NADA. APENAS RETORNE A LISTA EXATA DA BASE DE DADOS.
     `,
     
     REPORT: `
     MODO: EMISSOR DE DOCUMENTO TÉCNICO.
+    
+    INSTRUÇÃO PARA O RELATÓRIO:
+    1. AJA COMO UM AUDITOR TÉCNICO. NÃO INVENTE DADOS.
+    2. Se o técnico não marcou "Vácuo", NÃO escreva que o vácuo foi feito.
+    3. Se SH ou SC não foram informados, adicione uma "NOTA TÉCNICA" no rodapé recomendando a medição para validar a garantia do compressor.
+    4. Use linguagem técnica (Fluido, Corrente, Pressão).
     `
 };
-
-export const OFFLINE_DB = {
-    errors: { 
-        "e04": "SSW-05: Sobretemperatura. Verifique ventiladores do painel.", 
-        "e05": "SSW-05: Sobrecarga. Verifique mecânica do compressor ou ajuste de corrente.",
-        "e1": "Falha no sensor ambiente do controlador Ageon.",
-        "ah": "Alarme de Temperatura Alta (Verificar rendimento)."
-    },
-    tips: { "gelo": "Gelo no tanque? Suspeitos: 1. Agitador parado, 2. r0 baixo, 3. Sensor mal posicionado." }
-};
-
-export const FLUIDS = [Refrigerant.R22, Refrigerant.R404A];

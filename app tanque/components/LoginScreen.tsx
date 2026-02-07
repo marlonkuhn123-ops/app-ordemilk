@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Card, Button, Input } from './ComponentesUI';
+import { Card, Button, Input } from './UI'; // Updated import path
 
 interface LoginScreenProps {
     onLogin: (success: boolean) => void;
