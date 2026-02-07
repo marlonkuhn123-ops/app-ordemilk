@@ -1,37 +1,9 @@
-import React, { memo, useState, useEffect } from 'react';
+
+import React, { memo } from 'react';
 import { ViewState } from '../types';
 
 // --- CABEÇALHO (TOPO) ---
 export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
-    const [hasCustomKey, setHasCustomKey] = useState(false);
-
-    useEffect(() => {
-        const key = localStorage.getItem('om_key_v41_force');
-        setHasCustomKey(!!key);
-    }, []);
-
-    // Função oculta para atualizar chave clicando no ícone de chave
-    const updateKey = () => {
-        const current = localStorage.getItem('om_key_v41_force') || '';
-        const newKey = window.prompt("CONFIGURAÇÃO TÉCNICA (API KEY):\n\nInsira sua chave aqui se a conexão falhar.\n\n(Deixe em branco para limpar a chave e resetar bloqueios)", current);
-        
-        if (newKey === "") {
-            localStorage.removeItem('om_key_v41_force');
-            // IMPORTANTE: Reseta o bloqueio de ambiente para permitir nova tentativa se o dev corrigiu o .env
-            localStorage.removeItem('om_env_blocked');
-            alert("Chave removida. Bloqueios resetados. O sistema tentará ler VITE_GOOGLE_API_KEY.");
-            window.location.reload();
-            return;
-        }
-
-        if (newKey !== null && newKey.trim().length > 20 && newKey.startsWith("AIza")) {
-            localStorage.setItem('om_key_v41_force', newKey.trim());
-            localStorage.removeItem('om_env_blocked'); // Desbloqueia se o user inseriu uma nova
-            alert("Chave salva com sucesso.");
-            window.location.reload(); 
-        }
-    };
-
     return (
         <div className="pt-safe pb-3 px-6 sticky top-0 z-30 transition-colors duration-500 backdrop-blur-md border-b bg-[#121212]/90 border-[#333]">
             <div className="flex justify-between items-end max-w-2xl mx-auto pt-2">
@@ -58,26 +30,13 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                 </div>
                 
                 <div className="flex items-center gap-3 mb-1">
-                    {/* Botão de Chave - Discreto */}
-                    <button 
-                        onClick={updateKey}
-                        className={`w-7 h-7 flex items-center justify-center rounded-md border text-xs shadow-md transition-all ${
-                            hasCustomKey 
-                            ? 'border-emerald-800 bg-emerald-900/20 text-emerald-500' 
-                            : 'border-[#333] bg-[#1e1e1e] text-gray-600 hover:text-white'
-                        }`}
-                        title="Configurar Chave de API"
-                    >
-                        <i className="fa-solid fa-key"></i>
-                    </button>
-
                     <div className={`px-2 py-1 rounded-md flex items-center gap-1.5 border ${
                         isOnline 
                             ? 'border-emerald-900/50 bg-emerald-900/10 text-emerald-400' 
                             : 'border-red-900/50 bg-red-900/10 text-red-400'
                     }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V51</span>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-50'}`}></div>
+                        <span className="text-[9px] font-bold tracking-wider font-inter text-white text-opacity-80">V51.2</span>
                     </div>
                 </div>
             </div>

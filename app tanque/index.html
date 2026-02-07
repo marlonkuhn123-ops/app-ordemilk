@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -28,7 +29,6 @@
             background-color: #050505; 
             color: #ffffff; 
             overflow: hidden; 
-            /* Industrial Dark Background */
             background-image: linear-gradient(to bottom, #1a1a1a, #000000);
             background-size: cover; 
             background-position: center; 
@@ -48,9 +48,18 @@
         .pb-safe { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
     </style>
 
-    <!-- SHIM: Garante que process.env exista no navegador para compatibilidade com o código -->
     <script>
+        // SHIM GLOBAL: Garante que process.env.API_KEY esteja disponível para o SDK
         window.process = window.process || { env: {} };
+        
+        // Tenta capturar de múltiplas fontes comuns em builds Vite/Vercel
+        const apiKey = (typeof importMetaEnv !== 'undefined' && (importMetaEnv.VITE_GOOGLE_API_KEY || importMetaEnv.VITE_API_KEY))
+                    || (window._env_ && window._env_.VITE_GOOGLE_API_KEY)
+                    || (process.env.VITE_GOOGLE_API_KEY);
+
+        if (apiKey) {
+            process.env.API_KEY = apiKey;
+        }
     </script>
 
     <script type="importmap">
@@ -59,10 +68,9 @@
     "react": "https://esm.sh/react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-    "@google/generative-ai": "https://esm.sh/@google/generative-ai",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>

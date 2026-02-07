@@ -2,23 +2,23 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants";
 
-const getApiKey = () => {
-    return localStorage.getItem('om_key_v41_force') || process.env.API_KEY || "";
-};
-
 const handleApiError = (error: any) => {
     console.error("Gemini API Error:", error);
-    if (error?.message?.includes("429") || error?.message?.includes("quota")) {
-        return "⚠️ LIMITE DE USO EXCEDIDO: O sistema atingiu o limite de consultas gratuitas por minuto. Aguarde 60 segundos e tente novamente. Se o erro persistir, a quota diária foi atingida.";
+    const msg = error?.message || "";
+    
+    if (msg.includes("429") || msg.includes("quota")) {
+        return "⚠️ LIMITE DE USO EXCEDIDO: O sistema atingiu o limite de consultas gratuitas por minuto. Aguarde 60 segundos.";
     }
-    return "⚠️ ERRO DE CONEXÃO: Verifique sua internet ou tente novamente em instantes.";
+    // Guidelines: Application must not ask the user for the key or expose environment configuration details in UI.
+    return "⚠️ ERRO DE CONEXÃO: Verifique sua internet ou tente novamente.";
 };
 
 /**
  * Generates a response for technical tools using the specified prompt and context.
  */
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
-    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    // Correctly using process.env.API_KEY directly as per library initialization guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
         const response = await ai.models.generateContent({
@@ -31,6 +31,7 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
             }
         });
 
+        // Use response.text property directly
         return response.text || "";
     } catch (error: any) {
         throw new Error(handleApiError(error));
@@ -45,7 +46,8 @@ export const generateChatResponse = async (
     newMessage: string,
     imageBase64?: string
 ) => {
-    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    // Creating a fresh GoogleGenAI instance for the request as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const contents = [...history];
@@ -62,8 +64,9 @@ export const generateChatResponse = async (
         
         contents.push({ role: 'user', parts: currentParts });
 
+        // Using gemini-3-pro-preview for complex reasoning tasks in diagnostic chat
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview', // Flash tem maior limite de quota que o Pro
+            model: 'gemini-3-pro-preview',
             contents: contents,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.DIAGNOSTIC}`,
@@ -72,6 +75,7 @@ export const generateChatResponse = async (
             }
         });
         
+        // Use response.text property directly
         return response.text || "";
 
     } catch (error: any) {
@@ -83,25 +87,30 @@ export const generateChatResponse = async (
  * Analyzes an image of a motor plate to extract technical data.
  */
 export const analyzePlateImage = async (imageBase64: string) => {
-    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    // Initializing with process.env.API_KEY directly
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: [
-                {
-                    inlineData: {
-                        data: imageBase64,
-                        mimeType: 'image/jpeg',
+            // Correctly structured multi-part contents with an explicit parts array
+            contents: {
+                parts: [
+                    {
+                        inlineData: {
+                            data: imageBase64,
+                            mimeType: 'image/jpeg',
+                        },
                     },
-                },
-                { text: "Analise a placa deste motor ou compressor. Extraia APENAS os dados técnicos em JSON: {volts: string, amps: string, phase: 'tri'|'mono', model: string}." }
-            ],
+                    { text: "Analise a placa deste motor ou compressor. Extraia APENAS os dados técnicos em JSON: {volts: string, amps: string, phase: 'tri'|'mono', model: string}." }
+                ]
+            },
             config: {
                 responseMimeType: "application/json"
             }
         });
         
+        // Directly accessing .text property
         return response.text || "{}";
     } catch (error) {
         console.error("Plate Analysis Error:", error);

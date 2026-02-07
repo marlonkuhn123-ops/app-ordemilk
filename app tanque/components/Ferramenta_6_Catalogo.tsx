@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { Card, SectionTitle, Button, Select, AIOutputBox } from './ComponentesUI';
-import { generateTechResponse } from '../services/geminiService';
+import { GoogleGenAI } from "@google/genai";
+import { SYSTEM_PROMPT_BASE, TOOL_PROMPTS, TECHNICAL_CONTEXT } from "../constants";
 
 export const Ferramenta_6_Catalogo: React.FC = () => {
     const [volume, setVolume] = useState('RESFRIADOR 4 MIL LITROS 220V 3F - 2 COMPRESSOR MT 50');
@@ -8,11 +10,14 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const fetchData = async () => {
+        // Correctly using process.env.API_KEY as per the library guidelines
         setLoading(true);
         setResult(""); 
+        
         try {
-            // Prompt Otimizado para Fallback Offline
-            // O ponto final após ${volume} é CRÍTICO para o Regex do modo offline funcionar.
+            // Initializing GoogleGenAI with a named parameter object as required by the latest SDK
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            
             const prompt = `
             TAREFA: CONSULTA ESTRITA NA BASE DE DADOS V35.
             MODELO SOLICITADO: ${volume}.
@@ -26,11 +31,21 @@ export const Ferramenta_6_Catalogo: React.FC = () => {
             - NÃO FALE NADA.
             - APENAS RETORNE A LISTA.
             `;
-            
-            const text = await generateTechResponse(prompt, "TECH_DATA");
-            setResult(text);
+
+            // Using gemini-3-flash-preview for standard data extraction tasks as per guidelines
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.TECH_DATA}`,
+                    temperature: 0.1
+                }
+            });
+
+            // Directly accessing .text property on GenerateContentResponse
+            setResult(response.text || "Nenhum dado encontrado para este modelo.");
         } catch (e: any) {
-            setResult(`ERRO: ${e.message || "Falha na conexão."}`);
+            setResult(`ERRO: ${e.message || "Falha na conexão com a API."}`);
         } finally {
             setLoading(false);
         }

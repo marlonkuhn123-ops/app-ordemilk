@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, Button, Input } from './ComponentesUI';
 
@@ -9,25 +10,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
     const [shake, setShake] = useState(false);
-    const [statusMsg, setStatusMsg] = useState('');
 
     const handleLogin = () => {
         const input = password.trim();
 
-        // 1. LOGIN PADRÃO
+        // 1. LOGIN PADRÃO ÚNICO
         if (input === 'om2026') {
             onLogin(true);
-            return;
-        }
-
-        // 2. BACKDOOR PARA API KEY (Desbloqueia e Salva)
-        if (input.startsWith('AIza') && input.length > 30) {
-            localStorage.setItem('om_key_v41_force', input);
-            localStorage.removeItem('om_env_blocked'); // GARANTE O DESBLOQUEIO
-            setStatusMsg('✅ CHAVE SALVA! ENTRANDO...');
-            setTimeout(() => {
-                onLogin(true);
-            }, 1000);
             return;
         }
 
@@ -82,18 +71,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                                 onChange={(e) => {
                                     setPassword(e.target.value);
                                     setError(false);
-                                    setStatusMsg('');
                                 }}
                                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                 className={`!bg-[#0a0a0a] text-center tracking-widest font-mono text-lg !py-4 transition-all duration-300 ${error ? '!border-red-600 !text-red-500 placeholder-red-900/50' : 'focus:!border-orange-500'}`}
                             />
                         </div>
-
-                        {statusMsg && (
-                            <p className="text-center text-[10px] font-bold text-emerald-500 uppercase tracking-wider animate-fadeIn">
-                                {statusMsg}
-                            </p>
-                        )}
 
                         {error && (
                             <p className="text-center text-[10px] font-bold text-red-500 uppercase tracking-wider animate-fadeIn">
@@ -102,7 +84,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                         )}
 
                         <Button onClick={handleLogin} className="mt-2 group">
-                            <span className="group-hover:mr-2 transition-all">ACESSAR SISTEMA</span>
+                            <span className="group-hover:mr-2 transition-all text-white">ACESSAR SISTEMA</span>
                             <i className="fa-solid fa-arrow-right opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2 group-hover:translate-x-0"></i>
                         </Button>
                     </div>
