@@ -2,9 +2,9 @@
 export enum ViewState {
     DIAGNOSTIC = 'diag',
     ERRORS = 'errors',
-    REPORT = 'report',
     CALCULATOR = 'calc',
     SIZING = 'sizing',
+    REPORT = 'report',
     TECH_DATA = 'tech_data'
 }
 

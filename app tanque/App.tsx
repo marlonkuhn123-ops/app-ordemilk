@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header, BottomNav } from './components/Estrutura';
 import { TutorialOverlay } from './components/TutorialOverlay';
@@ -11,8 +10,6 @@ import { Ferramenta_3_Calculadora } from './components/Ferramenta_3_Calculadora'
 import { Ferramenta_4_Dimensionamento } from './components/Ferramenta_4_Dimensionamento';
 import { Ferramenta_5_Relatorio } from './components/Ferramenta_5_Relatorio';
 import { Ferramenta_6_Catalogo } from './components/Ferramenta_6_Catalogo';
-import { Ferramenta_7_Instalacao } from './components/Ferramenta_7_Instalacao';
-import { HistoryTool } from './components/HistoryTool'; // Ensure this is imported if used, otherwise remove or create
 
 import { ViewState } from './types';
 import { GlobalProvider } from './contexts/GlobalContext';
@@ -67,9 +64,6 @@ const AppContent: React.FC = () => {
             case ViewState.SIZING: return <Ferramenta_4_Dimensionamento />;
             case ViewState.REPORT: return <Ferramenta_5_Relatorio />;
             case ViewState.TECH_DATA: return <Ferramenta_6_Catalogo />;
-            // Add case for Installation tool if it exists in ViewState enum, else handled by default or add to ViewState
-            // Assuming Ferramenta_7 is integrated somehow or if ViewState needs update.
-            // For now, mapping standard views.
             default: return <Ferramenta_1_Assistente />;
         }
     };

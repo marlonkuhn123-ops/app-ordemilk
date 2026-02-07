@@ -59,7 +59,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     <div className="flex flex-col items-center">
                         <h1 className="flex items-baseline gap-2 mb-1">
                             <span className="font-inter font-black italic text-4xl tracking-tighter leading-none text-white">OM</span>
-                            <span className="font-inter font-black italic text-2xl tracking-tighter leading-none text-[#ce1126]">TECH V49</span>
+                            <span className="font-inter font-black italic text-2xl tracking-tighter leading-none text-[#ce1126]">TECH V51</span>
                         </h1>
                         <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-500">Acesso Restrito - Técnico</p>
                     </div>

@@ -77,7 +77,7 @@ export const Header: React.FC<{ isOnline: boolean }> = memo(({ isOnline }) => {
                             : 'border-red-900/50 bg-red-900/10 text-red-400'
                     }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V49</span>
+                        <span className="text-[9px] font-bold tracking-wider font-inter text-white">V51</span>
                     </div>
                 </div>
             </div>
@@ -99,7 +99,7 @@ const NavItem: React.FC<NavItemProps> = memo(({ id, icon, label, isActive, onCli
         <button 
             onClick={() => onClick(id)}
             className={`relative min-w-[55px] h-14 flex flex-col items-center justify-center transition-all duration-300 gap-0.5 px-1 ${
-                isActive ? '-translate-y-1' : 'opacity-60 hover:opacity-100'
+                isActive ? 'translate-y-[-4px]' : 'opacity-60 hover:opacity-100'
             }`}
         >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
@@ -129,7 +129,7 @@ const NAV_ITEMS = [
 
 export const BottomNav: React.FC<{ activeView: ViewState; setView: (v: ViewState) => void }> = memo(({ activeView, setView }) => {
     return (
-        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[96%] max-w-[480px] z-50">
+        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[96%] max-w-[520px] z-50">
             <div className="rounded-xl py-2 px-1 shadow-2xl backdrop-blur-xl border flex overflow-x-auto no-scrollbar justify-between items-center bg-[#1e1e1e]/95 border-[#333] shadow-black/80">
                 {NAV_ITEMS.map(item => (
                     <NavItem 

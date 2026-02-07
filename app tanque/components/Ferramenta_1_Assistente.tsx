@@ -1,23 +1,23 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, SectionTitle, Button, FileUpload } from './ComponentesUI';
 import { generateChatResponse } from '../services/geminiService';
 import { ChatMessage } from '../types';
+import { useGlobal } from '../contexts/GlobalContext';
 
-// --- SUB-COMPONENT: CHAT BUBBLE ---
 const ChatBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
     const isUser = msg.role === 'user';
-    const hasImage = !!msg.image;
     const isError = msg.isError;
     
     const formatText = (text: string) => {
         return text.split('\n').map((line, i) => {
             const parts = line.split(/(\*\*.*?\*\*)/g);
             return (
-                <div key={i} className="min-h-[1em] mb-1">
-                     {line.trim().startsWith('- ') && <span className="inline-block w-2 h-2 mr-2 rounded-full text-[0px] align-middle opacity-60 bg-orange-500">•</span>}
+                <div key={i} className="min-h-[1em] mb-0.5">
+                     {line.trim().startsWith('* ') && <span className="inline-block w-1.5 h-1.5 mr-2 rounded-full bg-orange-500 opacity-80"></span>}
                      {parts.map((part, j) => {
                         if (part.startsWith('**') && part.endsWith('**')) {
-                            return <strong key={j} className={isUser ? "text-white font-black border-b border-white/20" : "text-orange-400 font-bold"}>{part.slice(2, -2)}</strong>;
+                            return <strong key={j} className={isUser ? "text-white font-bold" : "text-orange-400 font-bold"}>{part.slice(2, -2)}</strong>;
                         }
                         return part;
                     })}
@@ -26,15 +26,14 @@ const ChatBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
         });
     };
 
-    const userBubbleClass = 'bg-orange-600 text-white border border-orange-500/50 shadow-md shadow-orange-900/30';
-    const aiBubbleClass = 'bg-[#2a2a2a] text-gray-100 border border-[#404040] shadow-sm';
-    const errorBubbleClass = 'bg-red-900/80 text-white border border-red-500 shadow-md';
-
     return (
         <div className={`flex flex-col max-w-[95%] mb-3 animate-slide-up ${isUser ? 'self-end items-end' : 'self-start items-start'}`}>
-            <div className={`p-3.5 rounded-lg text-sm leading-relaxed shadow-sm ${isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'} ${isError ? errorBubbleClass : (isUser ? userBubbleClass : aiBubbleClass)}`}>
-                {hasImage && (
-                    <img src={msg.image} alt="Upload" className="w-full rounded-lg mb-2 border border-white/10" />
+            <span className={`text-[8px] font-black uppercase mb-1 px-1 tracking-widest ${isUser ? 'text-gray-500' : 'text-orange-500'}`}>
+                {isUser ? 'TÉCNICO' : 'SUPERVISOR ORDEMILK'}
+            </span>
+            <div className={`p-4 rounded-xl text-sm leading-relaxed shadow-lg ${isUser ? 'bg-orange-700 text-white rounded-tr-sm' : 'bg-[#1a1a1a] text-gray-100 border border-[#333] rounded-tl-sm shadow-black/60'} ${isError ? 'bg-red-900/80 border-red-500 text-red-100' : ''}`}>
+                {msg.image && (
+                    <img src={msg.image} alt="Evidência" className="w-full rounded-lg mb-3 border border-white/10" />
                 )}
                 <div className="text-sm font-medium">
                     {formatText(msg.text)}
@@ -44,8 +43,8 @@ const ChatBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
     );
 };
 
-// --- FERRAMENTA UNIFICADA: SUPORTE ---
 export const Ferramenta_1_Assistente: React.FC = () => {
+    const { techData } = useGlobal();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -67,13 +66,12 @@ export const Ferramenta_1_Assistente: React.FC = () => {
     };
 
     const sendMessage = async (isInitial = false, manualText?: string) => {
-        let textToSend = manualText || input;
-        
-        if (!textToSend && !selectedImage && !isInitial) return;
+        const textToSend = manualText || input;
+        if (!textToSend && !selectedImage) return;
 
         const userMsg: ChatMessage = {
             role: 'user',
-            text: isInitial ? `RELATO INICIAL: "${textToSend}"` : textToSend,
+            text: textToSend,
             image: selectedImage || undefined
         };
         
@@ -91,13 +89,7 @@ export const Ferramenta_1_Assistente: React.FC = () => {
             const responseText = await generateChatResponse(apiHistory, userMsg.text, imgBase64);
             setMessages(prev => [...prev, { role: 'model', text: responseText }]);
         } catch (error: any) {
-            // DIAGNÓSTICO DETALHADO DO ERRO PARA O USUÁRIO
-            const errorMsg = error.message || "Erro desconhecido.";
-            setMessages(prev => [...prev, { 
-                role: 'model', 
-                text: `⚠️ DIAGNÓSTICO DE ERRO:\n\n${errorMsg}\n\nTente atualizar a chave na tela de Login (Senha) ou no botão de chave no topo.`, 
-                isError: true 
-            }]);
+            setMessages(prev => [...prev, { role: 'model', text: "⚠️ FALHA DE CONEXÃO. Tente novamente.", isError: true }]);
         } finally {
             setIsLoadingChat(false);
         }
@@ -108,98 +100,75 @@ export const Ferramenta_1_Assistente: React.FC = () => {
         await sendMessage(true);
     };
 
-    const resetDiag = () => {
-        setMessages([]);
-        setIsStarted(false);
-        setInput('');
-        setSelectedImage(null);
-    };
-
-    const shareChatWhatsapp = () => {
-        if (messages.length === 0) return;
-        const historyText = messages.map(m => {
-            const sender = m.role === 'user' ? 'TÉCNICO' : 'IA';
-            return `*[${sender}]*: ${m.text}`;
-        }).join('\n\n');
-        
-        const fullText = `*DIAGNÓSTICO V33 - SUPORTE TÉCNICO*\n\n${historyText}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(fullText)}`, '_blank');
+    const resetMessages = () => {
+        if(confirm("Reiniciar suporte do Supervisor?")) {
+            setMessages([]);
+            setIsStarted(false);
+        }
     };
 
     return (
-        <div className="animate-fadeIn pb-20">
-            <SectionTitle icon="fa-solid fa-screwdriver-wrench" title="1. SUPORTE TÉCNICO" />
+        <div className="animate-fadeIn pb-24">
+            <div className="flex justify-between items-center mb-3">
+                <SectionTitle icon="fa-solid fa-headset" title="1. SUPORTE DIRETO" />
+                <div className="bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded text-[8px] font-black text-orange-500 uppercase tracking-widest animate-pulse">
+                    SUPERVISOR ATIVO
+                </div>
+            </div>
             
-            <Card className="min-h-[60vh] flex flex-col">
-                
-                {!isStarted && (
-                    <div className="flex flex-col gap-4 animate-fadeIn">
-                        
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase flex justify-between text-white">
-                                <span>Relato do Problema</span>
-                            </label>
+            <Card className="min-h-[65vh] flex flex-col border-t-4 border-t-orange-600 !bg-[#121212]">
+                {!isStarted ? (
+                    <div className="flex flex-col gap-4 py-4 animate-fadeIn">
+                        <div className="bg-[#1a1a1a] p-4 rounded-lg border border-[#333] shadow-inner">
+                            <p className="text-xs text-gray-300 leading-relaxed font-bold">
+                                "Tô na escuta. Qual a situação aí no campo? Manda o relato ou uma foto do painel."
+                            </p>
+                        </div>
+
+                        <div className="space-y-1.5">
                             <textarea 
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 rows={4} 
-                                className="w-full p-3 rounded-lg focus:outline-none placeholder-gray-500 transition-all border 
-                                bg-[#252525] border-[#404040] text-white focus:border-orange-500 shadow-inner"
-                                placeholder="Ex: Compressor congelando, pressão baixa..."
+                                className="w-full p-4 rounded-xl focus:outline-none placeholder-gray-600 transition-all border bg-[#0a0a0a] border-[#333] text-white focus:border-orange-500 shadow-inner text-sm"
+                                placeholder="Relate o problema (Ex: Alta pressão e desarme)..."
                             />
                         </div>
 
-                        <FileUpload onChange={handleImageUpload} label={selectedImage ? "Trocar Imagem" : "FOTO DO PROBLEMA"} />
-                        {selectedImage && <img src={selectedImage} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-gray-600" />}
-
-                        <div className="p-3 rounded-lg flex items-start gap-2 border bg-[#252525] border-[#404040]">
-                            <i className="fa-solid fa-circle-info mt-0.5 text-xs text-orange-500"></i>
-                            <p className="text-[10px] leading-tight text-gray-300">
-                                <strong className="text-orange-400">DICA TÉCNICA:</strong> Para um diagnóstico preciso, informe: <strong>pressões</strong>, <strong>corrente</strong> e <strong>tipo de fluido</strong>.
-                            </p>
-                        </div>
+                        <FileUpload onChange={handleImageUpload} label={selectedImage ? "FOTO CARREGADA" : "FOTO DO QUADRO / MANÔMETRO"} />
+                        {selectedImage && <img src={selectedImage} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-[#333]" />}
 
                         <Button onClick={handleStartChat} disabled={!input && !selectedImage}>
-                            INICIAR DIAGNÓSTICO
+                            ACIONAR SUPERVISOR
                         </Button>
                     </div>
-                )}
-
-                {isStarted && (
+                ) : (
                     <>
-                         <div className="flex gap-2 mb-4">
-                            <button onClick={resetDiag} className="flex-1 py-2 rounded-lg text-[9px] uppercase font-bold border flex items-center justify-center gap-2 bg-[#2a2a2a] text-white border-[#404040] hover:bg-[#333]">
-                                <i className="fa-solid fa-rotate-right"></i> Novo Atendimento
-                            </button>
-                            <button onClick={shareChatWhatsapp} className="flex-1 py-2 bg-[#25D366]/20 rounded-lg text-[9px] uppercase font-bold text-[#25D366] border border-[#25D366]/50 hover:bg-[#25D366]/30 flex items-center justify-center gap-2 transition-colors">
-                                <i className="fa-brands fa-whatsapp text-sm"></i> Compartilhar
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 max-h-[500px]">
+                        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 max-h-[500px] flex flex-col scroll-smooth">
                             {messages.map((m, i) => <ChatBubble key={i} msg={m} />)}
                             {isLoadingChat && (
-                                <div className="flex flex-col items-center justify-center gap-2 my-4 opacity-70">
-                                    <div className="flex gap-1">
-                                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-100"></div>
-                                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-200"></div>
-                                    </div>
+                                <div className="self-start items-start animate-pulse p-4 bg-[#1a1a1a] rounded-xl border border-[#333] flex gap-2">
+                                    <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                    <div className="w-2 h-2 bg-orange-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                                 </div>
                             )}
                             <div ref={bottomRef} />
                         </div>
                         
                         <div className="flex gap-2 mt-auto pt-4 border-t border-[#333]">
+                            <button onClick={resetMessages} className="w-12 h-12 rounded-xl bg-[#1a1a1a] text-gray-600 flex items-center justify-center border border-[#333] hover:text-red-500 transition-colors">
+                                <i className="fa-solid fa-trash-can"></i>
+                            </button>
                             <input 
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && sendMessage(false)}
-                                placeholder="Digite aqui..."
-                                className="flex-1 rounded-lg px-4 text-sm focus:outline-none border bg-[#252525] border-[#404040] text-white focus:border-orange-500 placeholder-gray-500"
+                                placeholder="Informe o resultado do teste..."
+                                className="flex-1 rounded-xl px-4 text-sm focus:outline-none border bg-[#0a0a0a] border-[#333] text-white focus:border-orange-500 placeholder-gray-700"
                             />
-                            <button onClick={() => sendMessage(false)} disabled={isLoadingChat || !input} className="w-12 h-12 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-lg hover:bg-orange-500">
+                            <button onClick={() => sendMessage(false)} disabled={isLoadingChat || !input} className="w-12 h-12 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-lg hover:bg-orange-500 disabled:opacity-30">
                                 <i className="fa-solid fa-paper-plane"></i>
                             </button>
                         </div>
