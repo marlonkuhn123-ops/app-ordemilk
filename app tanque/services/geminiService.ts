@@ -6,21 +6,24 @@ const handleApiError = (error: any) => {
     console.error("Gemini API Error:", error);
     const msg = error?.message || "";
     
-    if (msg.includes("429") || msg.includes("quota")) {
-        return "⚠️ LIMITE DE USO EXCEDIDO: O sistema atingiu o limite de consultas gratuitas por minuto. Aguarde 60 segundos.";
+    if (msg.includes("404") || msg.includes("not found")) {
+        // Updated error message for model not found
+        return "⚠️ ERRO DE MODELO: O modelo de IA selecionado está obsoleto ou indisponível. Por favor, contate o suporte.";
     }
-    return "⚠️ ERRO DE CONEXÃO: Verifique sua internet ou tente novamente.";
+    if (msg.includes("429") || msg.includes("quota")) {
+        return "⚠️ LIMITE DE USO: Aguarde 30 segundos.";
+    }
+    return "⚠️ ERRO DE CONEXÃO: Verifique sua internet.";
 };
 
-/**
- * Generates a response for technical tools using the specified prompt and context.
- */
 export const generateTechResponse = async (userPrompt: string, toolType: string = "ASSISTANT") => {
+    // API key must be obtained exclusively from process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            // Updated to recommended model for basic text tasks
+            model: 'gemini-3-flash-preview', 
             contents: userPrompt,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${(TOOL_PROMPTS as any)[toolType] || ""}`,
@@ -28,21 +31,18 @@ export const generateTechResponse = async (userPrompt: string, toolType: string 
                 topP: 0.8
             }
         });
-
         return response.text || "";
     } catch (error: any) {
         throw new Error(handleApiError(error));
     }
 };
 
-/**
- * Generates a response for the interactive diagnostic chat.
- */
 export const generateChatResponse = async (
     history: { role: string; parts: any[] }[],
     newMessage: string,
     imageBase64?: string
 ) => {
+    // API key must be obtained exclusively from process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
@@ -61,7 +61,8 @@ export const generateChatResponse = async (
         contents.push({ role: 'user', parts: currentParts });
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            // Updated to recommended model for complex text/chat tasks with image support
+            model: 'gemini-3-pro-preview', 
             contents: contents,
             config: {
                 systemInstruction: `${SYSTEM_PROMPT_BASE}\n\n${TECHNICAL_CONTEXT}\n\n${TOOL_PROMPTS.DIAGNOSTIC}`,
@@ -69,23 +70,20 @@ export const generateChatResponse = async (
                 topP: 0.9
             }
         });
-        
         return response.text || "";
-
     } catch (error: any) {
         throw new Error(handleApiError(error));
     }
 };
 
-/**
- * Analyzes an image of a motor plate to extract technical data.
- */
 export const analyzePlateImage = async (imageBase64: string) => {
+    // API key must be obtained exclusively from process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            // Updated to recommended model for image analysis tasks
+            model: 'gemini-2.5-flash-image', 
             contents: {
                 parts: [
                     {
@@ -94,17 +92,14 @@ export const analyzePlateImage = async (imageBase64: string) => {
                             mimeType: 'image/jpeg',
                         },
                     },
-                    { text: "Analise a placa deste motor ou compressor. Extraia APENAS os dados técnicos em JSON: {volts: string, amps: string, phase: 'tri'|'mono', model: string}." }
+                    { text: "Analise a placa deste motor. Extraia APENAS dados técnicos em JSON." }
                 ]
             },
-            config: {
-                responseMimeType: "application/json"
-            }
+            config: { responseMimeType: "application/json" }
         });
-        
         return response.text || "{}";
     } catch (error) {
-        console.error("Plate Analysis Error:", error);
+        console.error("Plate Analysis Error:", error); // Added console.error for better debugging
         return "{}";
     }
 };
