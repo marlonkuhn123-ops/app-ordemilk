@@ -58,7 +58,7 @@ export const generateChatResponse = async (
             });
         }
         
-        contents.push({ role: 'user', parts: currentParts });
+            contents.push({ role: 'user', parts: currentParts });
 
         const response = await ai.models.generateContent({
             // Updated to recommended model for complex text/chat tasks with image support

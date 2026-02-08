@@ -9,37 +9,19 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/900/900797.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS will now be built locally into output.css -->
+    <link rel="stylesheet" href="./dist/output.css">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Babel standalone and client-side compilation removed for Vercel build -->
+    <!-- <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> -->
 
+    <!-- Custom styles moved to index.css and will be processed by Tailwind -->
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #050505; 
-            color: #ffffff; 
-            overflow: hidden; 
-            background-image: linear-gradient(to bottom, #1a1a1a, #000000);
-            background-size: cover; 
-            background-position: center; 
-            background-attachment: fixed; 
-            -webkit-tap-highlight-color: transparent; 
-        }
-        ::-webkit-scrollbar { width: 0px; display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
-        
-        .pt-safe { padding-top: max(20px, env(safe-area-inset-top)); }
-        .pb-safe { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+        /* All custom styles moved to index.css and processed via Tailwind */
     </style>
 
     <script>
@@ -57,7 +39,8 @@
         // Se a chave não estiver nos objetos acima, ela será injetada diretamente no process.env.API_KEY pelo ambiente
     </script>
 
-    <script type="importmap">
+    <!-- importmap removed as dependencies will be bundled -->
+    <!-- <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
@@ -68,12 +51,15 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
-</script>
+</script> -->
+<!-- The local index.css will be processed by Tailwind -->
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx"></script>
+    <!-- Script now points to compiled JavaScript, assuming a build step -->
+    <!-- <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx"></script> -->
+    <script type="module" src="/index.js"></script>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>

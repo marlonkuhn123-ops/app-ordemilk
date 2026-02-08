@@ -74,8 +74,7 @@ export const Tool_Sizing: React.FC = () => {
             INSTRUÇÃO DE SAÍDA:
             1. Gere um "MEMORIAL DE CÁLCULO" listando os 3 principais indicadores: KCAL/H, KW e HP.
             2. Destaque em negrito a condição de projeto: "Considerando Evaporação -5°C e Condensação 40°C".
-            3. Sugira arredondamento comercial do HP para cima (Ex: Deu 1.8 HP -> Usar 2.0 HP ou equivalente MT/MTZ).
-            4. Seja extremamente técnico e direto. Sem saudações.
+            3. Seja extremamente técnico e direto. Sem saudações.
             `;
 
             const text = await generateTechResponse(prompt, "SIZING");

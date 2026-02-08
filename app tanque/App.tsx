@@ -91,7 +91,7 @@ const AppContent: React.FC = () => {
             <div className="relative flex flex-col h-full z-10">
                 <Header isOnline={isOnline} onStartTutorial={() => setIsTutorialActive(true)} />
                 
-                <main className="flex-1 overflow-y-auto px-4 pt-4 scroll-smooth max-w-2xl mx-auto w-full pb-safe">
+                <main className="flex-1 overflow-y-auto px-4 pt-6 scroll-smooth max-w-2xl mx-auto w-full pb-safe">
                     {renderView()}
                 </main>
                 
